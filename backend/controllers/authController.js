@@ -1,7 +1,6 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-
 // Generate JWT
 const generateToken=(res,payload)=>{
    const token=jwt.sign(payload,process.env.JWT_SECRET,{expiresIn:"1d"});
@@ -110,5 +109,19 @@ export const logoutUser=async(req,res)=>{
    } catch (error) {
       console.log(error.message);
       return res.json({message:"Internal server error",success:false})
+   }
+}
+
+export const getProfile=async(req,res)=>{
+   try {
+      const user=await User.findById(req.user.id).select("-password");
+      if(!user){
+          return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+      }
+      res.json(user)
+   } catch (error) {
+       return res.json({message:"Internal server error",success:false})
    }
 }
