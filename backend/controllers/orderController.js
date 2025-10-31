@@ -4,7 +4,7 @@ import Cart from "../models/cartModel.js";
 export const placeOrder = async (req, res) => {
   try {
     const { id } = req.user;
-    const { address } = req.body;
+    const { address, paymentMethod } = req.body;
     if (!address)
       return res
         .status(400)
@@ -28,6 +28,7 @@ export const placeOrder = async (req, res) => {
       })),
       totalAmount,
       address,
+      paymentMethod,
     });
 
     // Clear cart
@@ -49,7 +50,7 @@ export const getUserOrders = async (req, res) => {
   try {
     const { id } = req.user;
     const orders = await Order.find({ user: id }).sort({ createdAt: -1 });
-    res.status(200).json(orders);
+    res.status(200).json({ orders, success: true });
   } catch (error) {
     console.log(error);
     return res.json({ message: "Internal server error", success: false });

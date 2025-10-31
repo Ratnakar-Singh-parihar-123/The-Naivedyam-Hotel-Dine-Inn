@@ -5,6 +5,7 @@ export const AppContext = createContext();
 import axios from "axios";
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 axios.defaults.withCredentials = true;
+import { toast } from "react-hot-toast";
 const AppContextProvider = ({ children }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -12,6 +13,50 @@ const AppContextProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [categories, setCategories] = useState([]);
   const [menus, setMenus] = useState([]);
+
+  const [cart, setCart] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  const fetchCartData = async () => {
+    try {
+      const { data } = await axios.get("/api/cart/get");
+      if (data.success) {
+        setCart(data.cart);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    if (cart?.items) {
+      const total = cart.items.reduce(
+        (sum, item) => sum + item.menuItem.price * item.quantity,
+        0
+      );
+      setTotalPrice(total);
+    }
+  }, [cart]);
+  const cartCount = cart?.items?.reduce(
+    (acc, item) => acc + item.quantity,
+    0 || 0
+  );
+  // 🔹 Add to Cart function
+  const addToCart = async (menuId) => {
+    try {
+      const { data } = await axios.post("/api/cart/add", {
+        menuId,
+        quantity: 1,
+      });
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      toast.error("Something went wrong!");
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -29,7 +74,6 @@ const AppContextProvider = ({ children }) => {
   const fetchMenus = async () => {
     try {
       const { data } = await axios.get("/api/menu/all");
-      console.log("dataa", data);
 
       if (data.success) {
         setMenus(data.menuItems);
@@ -56,6 +100,7 @@ const AppContextProvider = ({ children }) => {
     isAuth();
     fetchCategories();
     fetchMenus();
+    fetchCartData();
   }, []);
   const value = {
     navigate,
@@ -70,6 +115,10 @@ const AppContextProvider = ({ children }) => {
     fetchCategories,
     menus,
     fetchMenus,
+    addToCart,
+    cartCount,
+    cart,
+    totalPrice,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
