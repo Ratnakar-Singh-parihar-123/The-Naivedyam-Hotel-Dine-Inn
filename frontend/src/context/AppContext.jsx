@@ -79,10 +79,10 @@ const AppContextProvider = ({ children }) => {
       if (data.success) {
         setMenus(data.menuItems);
       } else {
-        logconsole.log("Failed to fetch categories");
+        console.log("Failed to fetch menus");
       }
     } catch (error) {
-      console.log("Error fetching categories:", error);
+      console.log("Error fetching menus:", error);
     }
   };
 
