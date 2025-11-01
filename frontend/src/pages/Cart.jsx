@@ -1,9 +1,11 @@
 import { useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { X } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Cart = () => {
-  const { cart, totalPrice, navigate } = useContext(AppContext);
+  const { cart, totalPrice, navigate, axios, fetchCartData } =
+    useContext(AppContext);
 
   if (!cart || !cart.items || cart.items.length === 0) {
     return (
@@ -14,6 +16,18 @@ const Cart = () => {
       </div>
     );
   }
+
+  const removeFromCart = async (menuId) => {
+    try {
+      const { data } = await axios.delete(`/api/cart/remove/${menuId}`);
+      if (data.success) {
+        toast.success(data.message);
+        fetchCartData();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 bg-white shadow-lg rounded-2xl p-6">
@@ -51,6 +65,9 @@ const Cart = () => {
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 font-semibold">
                   $. {item.menuItem.price * item.quantity}
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700 font-semibold">
+                  <X onClick={() => removeFromCart(item.menuItem._id)} />
                 </td>
               </tr>
             ))}

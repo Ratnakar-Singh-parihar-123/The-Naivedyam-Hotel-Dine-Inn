@@ -53,7 +53,9 @@ export const removeFromCart = async (req, res) => {
 
     const cart = await Cart.findOne({ user: id });
     if (!cart) return res.status(404).json({ message: "Cart not found" });
-    cart.items = cart.items.filter((item) => item._id !== menuId);
+    cart.items = cart.items.filter(
+      (item) => item.menuItem._id.toString() !== menuId
+    );
     await cart.save();
     res.status(200).json({ message: "Item removed from cart", success: true });
   } catch (error) {

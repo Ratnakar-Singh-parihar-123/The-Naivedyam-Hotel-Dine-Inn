@@ -49,6 +49,7 @@ const AppContextProvider = ({ children }) => {
       });
       if (data.success) {
         toast.success(data.message);
+        fetchCartData();
       } else {
         toast.error(data.message);
       }
@@ -119,6 +120,7 @@ const AppContextProvider = ({ children }) => {
     cartCount,
     cart,
     totalPrice,
+    fetchCartData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
