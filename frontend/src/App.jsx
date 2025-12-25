@@ -24,6 +24,8 @@ import Menus from "./pages/admin/Menus";
 import Orders from "./pages/admin/Orders";
 import Bookings from "./pages/admin/Bookings";
 import Dashboard from "./pages/admin/Dashboard";
+import About from "./pages/about/AboutPage"
+
 const App = () => {
   const adminPath = useLocation().pathname.includes("admin");
   const { admin } = useContext(AppContext);
@@ -43,6 +45,8 @@ const App = () => {
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/about" element={<About />} />
+
 
         {/* admin routes  */}
         <Route path="/admin" element={admin ? <AdminLayout /> : <AdminLogin />}>
