@@ -32,7 +32,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",                 // local dev
-      "https://the-naivedyam-hotel-dine-inn-b8sr.vercel.app/", // production
+      "https://the-naivedyam-hotel-dine-inn-b8sr-6kn7aifev.vercel.app/", // production
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
