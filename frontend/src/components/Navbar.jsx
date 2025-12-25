@@ -33,7 +33,13 @@ import {
   Wallet,
   Shield,
   Gift,
-  HelpCircle
+  HelpCircle,
+  MessageSquare,
+  Heart,
+  TrendingUp,
+  ShieldCheck,
+  CreditCard,
+  Settings
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -49,30 +55,42 @@ const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState("main");
+  const [scrolled, setScrolled] = useState(false);
 
   const [notifications] = useState([
-    { id: 1, text: "Your table reservation is confirmed", time: "10 min ago", read: false },
-    { id: 2, text: "Special discount on Italian dishes", time: "1 hour ago", read: false },
-    { id: 3, text: "Order #1234 is being prepared", time: "2 hours ago", read: true }
+    { id: 1, text: "Your table reservation is confirmed", time: "10 min ago", read: false, type: "booking" },
+    { id: 2, text: "Special discount on Italian dishes", time: "1 hour ago", read: false, type: "offer" },
+    { id: 3, text: "Order #1234 is being prepared", time: "2 hours ago", read: true, type: "order" },
+    { id: 4, text: "Your review got 50 likes", time: "5 hours ago", read: false, type: "social" },
+    { id: 5, text: "Payment successful for order #5678", time: "1 day ago", read: true, type: "payment" }
   ]);
 
   const profileRef = useRef(null);
   const notificationsRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const aboutDropdownRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Check for saved theme preference
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.classList.add("dark");
-    } else if (savedTheme === "light") {
+    } else {
       setIsDarkMode(false);
       document.documentElement.classList.remove("dark");
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
     }
   }, []);
 
@@ -90,6 +108,9 @@ const Navbar = () => {
       }
       if (aboutDropdownRef.current && !aboutDropdownRef.current.contains(event.target)) {
         setIsAboutDropdownOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target) && isSearchOpen) {
+        setIsSearchOpen(false);
       }
     };
 
@@ -111,33 +132,37 @@ const Navbar = () => {
       document.body.style.overflow = 'unset';
       document.documentElement.style.overflow = 'unset';
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isSearchOpen]);
 
   const toggleDarkMode = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      toast.success("Light mode activated", {
-        duration: 1500,
-        icon: '☀️',
-        style: {
-          background: '#363636',
-          color: '#fff',
-        }
-      });
-    } else {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+
+    if (newMode) {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
       toast.success("Dark mode activated", {
         duration: 1500,
         icon: '🌙',
         style: {
-          background: '#363636',
+          background: '#1f2937',
           color: '#fff',
+          border: '1px solid #374151'
+        }
+      });
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      toast.success("Light mode activated", {
+        duration: 1500,
+        icon: '☀️',
+        style: {
+          background: '#fff',
+          color: '#1f2937',
+          border: '1px solid #e5e7eb'
         }
       });
     }
-    setIsDarkMode(!isDarkMode);
   };
 
   const logout = async () => {
@@ -145,7 +170,13 @@ const Navbar = () => {
       const { data } = await axios.post("/api/auth/logout");
       if (data.success) {
         setUser(null);
-        toast.success(data.message);
+        toast.success(data.message, {
+          icon: '👋',
+          style: {
+            background: '#10b981',
+            color: '#fff',
+          }
+        });
         navigate("/");
         setIsProfileOpen(false);
         setIsMenuOpen(false);
@@ -158,52 +189,46 @@ const Navbar = () => {
 
   // Navigation items with icons
   const navItems = [
-    { path: "/", label: "Home", icon: <Home size={18} />, badge: "Popular" },
-    { path: "/menu", label: "Menu", icon: <BookOpen size={18} />, badge: "New" },
-    { path: "/rooms", label: "Rooms", icon: <Hotel size={18} />, featured: true },
-    { path: "/book-table", label: "Book", icon: <Calendar size={18} /> },
-    { path: "/services", label: "Services", icon: <Sparkles size={18} /> },
+    { path: "/", label: "Home", icon: <Home size={20} />, badge: "Popular", featured: true },
+    { path: "/menu", label: "Menu", icon: <BookOpen size={20} />, badge: "New", featured: true },
+    { path: "/rooms", label: "Rooms", icon: <Hotel size={20} />, badge: "Luxury", featured: true },
+    { path: "/book-table", label: "Book Table", icon: <Calendar size={20} />, badge: "Hot" },
+    // { path: "/services", label: "Services", icon: <Sparkles size={20} /> },
+    // { path: "/offers", label: "Offers", icon: <Tag size={20} />, badge: "50% OFF" },
   ];
 
   // About dropdown items
   const aboutItems = [
-    { path: "/about", label: "Our Story", icon: <Info size={16} />, desc: "Learn about our journey" },
-    { path: "/team", label: "Our Team", icon: <Users size={16} />, desc: "Meet our talented chefs" },
-    { path: "/awards", label: "Awards", icon: <Award size={16} />, desc: "Our achievements" },
-    { path: "/testimonials", label: "Testimonials", icon: <Star size={16} />, desc: "Customer stories" },
-    { path: "/careers", label: "Careers", icon: <Globe size={16} />, desc: "Join our team", badge: "Hiring" },
-    { path: "/contact", label: "Contact", icon: <Phone size={16} />, desc: "Get in touch" },
+    { path: "/about", label: "Our Story", icon: <Heart size={18} />, desc: "Learn about our journey" },
+    { path: "/team", label: "Our Team", icon: <Users size={18} />, desc: "Meet our talented chefs" },
+    { path: "/awards", label: "Awards", icon: <Award size={18} />, desc: "Our achievements", badge: "25+" },
+    { path: "/testimonials", label: "Testimonials", icon: <MessageSquare size={18} />, desc: "Customer stories" },
+    { path: "/careers", label: "Careers", icon: <TrendingUp size={18} />, desc: "Join our team", badge: "Hiring" },
+    { path: "/contact", label: "Contact", icon: <Phone size={18} />, desc: "Get in touch" },
   ];
 
-  // Mobile menu sections
-  const mobileSections = {
-    main: {
-      title: "Main Navigation",
-      items: navItems
-    },
-    about: {
-      title: "About Us",
-      items: [
-        { path: "/about", label: "About Us", icon: <Info size={18} /> },
-        { path: "/team", label: "Our Team", icon: <Users size={18} /> },
-        { path: "/testimonials", label: "Testimonials", icon: <Star size={18} /> },
-        { path: "/careers", label: "Careers", icon: <Globe size={18} />, badge: "Hiring" },
-        { path: "/contact", label: "Contact", icon: <Phone size={18} /> },
-      ]
-    },
-    quick: {
-      title: "Quick Actions",
-      items: [
-        { label: "Track Order", icon: <Package size={16} />, action: () => navigate("/track-order") },
-        { label: "Gift Cards", icon: <Gift size={16} />, action: () => navigate("/gift-cards") },
-        { label: "Help Center", icon: <HelpCircle size={16} />, action: () => navigate("/help") },
-        { label: "FAQ", icon: <Info size={16} />, action: () => navigate("/faq") },
-      ]
-    }
-  };
+  // User menu items
+  const userMenuItems = [
+    { path: "/dashboard", label: "Dashboard", icon: <UserCircle size={18} />, color: "text-blue-600" },
+    { path: "/my-bookings", label: "My Bookings", icon: <Calendar size={18} />, color: "text-green-600" },
+    { path: "/my-orders", label: "My Orders", icon: <Package size={18} />, color: "text-orange-600", badge: "3" },
+    { path: "/wishlist", label: "Wishlist", icon: <Heart size={18} />, color: "text-pink-600", badge: "12" },
+    { path: "/wallet", label: "Wallet", icon: <CreditCard size={18} />, color: "text-purple-600", badge: "$125" },
+    { path: "/security", label: "Security", icon: <ShieldCheck size={18} />, color: "text-emerald-600" },
+    { path: "/settings", label: "Settings", icon: <Settings size={18} />, color: "text-gray-600" },
+  ];
+
+  // Quick actions for mobile
+  const quickActions = [
+    { label: "Track Order", icon: <Package size={20} />, action: () => navigate("/track-order"), color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30" },
+    { label: "Gift Cards", icon: <Gift size={20} />, action: () => navigate("/gift-cards"), color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30" },
+    { label: "Help Center", icon: <HelpCircle size={20} />, action: () => navigate("/help"), color: "bg-green-100 text-green-600 dark:bg-green-900/30" },
+    { label: "Live Chat", icon: <MessageSquare size={20} />, action: () => navigate("/chat"), color: "bg-pink-100 text-pink-600 dark:bg-pink-900/30" },
+  ];
 
   // Check if a link is active
   const isActive = (path) => {
+    if (path === "/") return location.pathname === "/";
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
@@ -218,98 +243,141 @@ const Navbar = () => {
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
-  // Mobile-specific functions
+  // Mobile navigation handler
   const handleMobileNavigation = (path) => {
     navigate(path);
     setIsMenuOpen(false);
     setActiveMobileSection("main");
   };
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'booking': return '📅';
+      case 'offer': return '🎁';
+      case 'order': return '🍽️';
+      case 'social': return '❤️';
+      case 'payment': return '💳';
+      default: return '🔔';
+    }
+  };
+
   return (
     <>
-      {/* Top Announcement Bar - Mobile Optimized */}
-      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white py-1.5 sm:py-2 px-3 sm:px-4 text-[10px] xs:text-xs sm:text-sm">
+      {/* Top Announcement Bar */}
+      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white py-1.5 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between sm:justify-center gap-1.5 xs:gap-2 sm:gap-3 lg:gap-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
-              <Clock size={10} className="xs:w-3 xs:h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">Open: 11AM - 11PM</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5">
+              <Clock size={14} />
+              <span>Open: 11AM - 11PM</span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
-              <MapPin size={12} className="sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">123 Luxury Avenue, NYC</span>
+            <div className="hidden sm:flex items-center gap-1.5">
+              <MapPin size={14} />
+              <span>123 Luxury Avenue, NYC</span>
             </div>
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
-              <Phone size={10} className="xs:w-3 xs:h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">+91 9399741051</span>
+            <div className="flex items-center gap-1.5">
+              <Phone size={14} />
+              <span>+91 9399741051</span>
             </div>
-            <div className="hidden lg:flex items-center gap-1.5 sm:gap-2">
-              <Tag size={12} className="sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">15% Off First Order</span>
+            <div className="hidden lg:flex items-center gap-1.5">
+              <Tag size={14} />
+              <span>15% Off First Order • Use Code: WELCOME15</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 shadow-lg shadow-black/5">
-        <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 xs:h-16 sm:h-20">
-            {/* Left - Logo and Mobile Menu Button */}
-            <div className="flex items-center flex-1 sm:flex-none">
+      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
+        ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-xl border-b border-gray-200 dark:border-gray-800'
+        : 'bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800'
+        }`}>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Logo and Mobile Menu Button */}
+            <div className="flex items-center flex-1">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden mr-1.5 xs:mr-2 sm:mr-3 p-1 xs:p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
+                className="lg:hidden mr-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Toggle menu"
               >
                 {isMenuOpen ? (
-                  <X size={18} className="xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+                  <X size={24} className="text-gray-700 dark:text-gray-300" />
                 ) : (
-                  <Menu size={18} className="xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+                  <Menu size={24} className="text-gray-700 dark:text-gray-300" />
                 )}
               </button>
 
-              <Link to="/" className="flex items-center group touch-manipulation">
-                <div className="relative">
-                  <div className="w-28 xs:w-32 h-8 xs:h-9 sm:w-40 sm:h-12 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:shadow-orange-500/50 transition-shadow duration-300">
-                    <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 px-1 sm:px-0">
-                      <ChefHat className="w-4 h-4 xs:w-5 xs:h-5 sm:w-5 sm:h-7 text-white" />
-                      <span className="text-white font-bold text-sm xs:text-base  tracking-tight truncate">
-                        The<span className="text-amber-300"> Naivedyam</span>
+              <Link to="/" className="flex items-center group">
+                <div className="relative flex items-center justify-center">
+                  {/* Main Logo */}
+                  <div
+                    className="
+      flex items-center justify-center
+      h-10 sm:h-12
+      px-4 sm:px-5
+      rounded-xl
+      bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600
+      shadow-md shadow-orange-500/30
+      transition-all duration-300
+      hover:shadow-orange-500/50
+    "
+                  >
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
+
+                      <span
+                        className="
+          text-white font-bold
+          text-base sm:text-lg
+          tracking-tight whitespace-nowrap
+        "
+                      >
+                        The
+                        <span className="text-amber-200 ml-1">Naivedyam</span>
                       </span>
                     </div>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 xs:-bottom-1.5 xs:-right-1.5 sm:-bottom-2 sm:-right-2 w-4 h-4 xs:w-5 xs:h-5 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <UtensilsCrossed className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 text-white" />
+
+                  {/* Floating Badge */}
+                  <div
+                    className="
+      absolute
+      -bottom-1.5 -right-1.5
+      sm:-bottom-2 sm:-right-2
+      w-6 h-6 sm:w-7 sm:h-7
+      bg-blue-500
+      rounded-full
+      flex items-center justify-center
+      shadow-md
+    "
+                  >
+                    <UtensilsCrossed className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
                   </div>
                 </div>
+
               </Link>
             </div>
 
-            {/* Center - Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1 mx-2 xl:mx-4">
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-1 mx-4">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative flex items-center px-3 py-2 xs:px-4 xs:py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 font-semibold group ${
-                    isActive(item.path)
-                      ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shadow-lg shadow-orange-500/10"
-                      : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
-                  }`}
+                  className={`relative flex items-center px-4 py-2.5 rounded-xl transition-all duration-300 font-semibold group ${isActive(item.path)
+                    ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-lg shadow-orange-500/10"
+                    : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
+                    }`}
                 >
-                  <span className="mr-1.5 xs:mr-2 sm:mr-2.5 group-hover:scale-110 transition-transform">
+                  <span className="mr-2 group-hover:scale-110 transition-transform">
                     {item.icon}
                   </span>
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <span>{item.label}</span>
                   {item.badge && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[9px] xs:text-[10px] sm:text-xs px-1 xs:px-1.5 sm:px-2 py-0.5 rounded-full animate-pulse">
+                    <span className={`absolute -top-1 -right-1 text-white text-xs px-2 py-0.5 rounded-full ${item.featured ? 'bg-gradient-to-r from-pink-500 to-rose-500 animate-pulse' : 'bg-gradient-to-r from-orange-500 to-amber-500'
+                      }`}>
                       {item.badge}
-                    </span>
-                  )}
-                  {item.featured && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-[9px] xs:text-[10px] sm:text-xs px-1 xs:px-1.5 sm:px-2 py-0.5 rounded-full">
-                      Featured
                     </span>
                   )}
                 </Link>
@@ -319,31 +387,25 @@ const Navbar = () => {
               <div className="relative" ref={aboutDropdownRef}>
                 <button
                   onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
-                  className={`flex items-center px-3 py-2 xs:px-4 xs:py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 font-semibold group ${
-                    isAboutDropdownOpen || location.pathname.startsWith('/about') || 
-                    location.pathname.startsWith('/team') || location.pathname.startsWith('/testimonials') ||
-                    location.pathname.startsWith('/careers')
-                      ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shadow-lg shadow-orange-500/10"
-                      : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
-                  }`}
+                  className={`flex items-center px-4 py-2.5 rounded-xl transition-all duration-300 font-semibold group ${isAboutDropdownOpen || location.pathname.startsWith('/about') ||
+                    location.pathname.startsWith('/team') || location.pathname.startsWith('/testimonials')
+                    ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30"
+                    : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
+                    }`}
                 >
-                  <span className="mr-1.5 xs:mr-2 sm:mr-2.5 group-hover:scale-110 transition-transform">
-                    <Info size={18} />
-                  </span>
-                  <span className="hidden sm:inline">About</span>
-                  <ChevronDown className={`w-3 h-3 xs:w-4 xs:h-4 ml-1 transition-transform duration-300 ${isAboutDropdownOpen ? 'rotate-180' : ''}`} />
+                  <Info size={20} className="mr-2" />
+                  <span>About</span>
+                  <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-300 ${isAboutDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* About Dropdown Menu */}
                 {isAboutDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl py-3 border border-gray-100 dark:border-gray-700 z-50 animate-fadeIn">
+                  <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                       <h3 className="font-bold text-gray-900 dark:text-white">About Naivedyam</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Discover our story & values
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Discover luxury dining & hospitality
                       </p>
                     </div>
-
                     <div className="py-2">
                       {aboutItems.map((item) => (
                         <Link
@@ -352,19 +414,22 @@ const Navbar = () => {
                           className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5 transition-colors group"
                           onClick={() => setIsAboutDropdownOpen(false)}
                         >
-                          <span className="mr-3 text-gray-500 group-hover:text-orange-500 transition-colors">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${item.path.includes('team') ? 'bg-blue-100 dark:bg-blue-900/30' :
+                            item.path.includes('awards') ? 'bg-amber-100 dark:bg-amber-900/30' :
+                              'bg-orange-100 dark:bg-orange-900/30'
+                            }`}>
                             {item.icon}
-                          </span>
+                          </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{item.label}</span>
                               {item.badge && (
-                                <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                                <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full">
                                   {item.badge}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               {item.desc}
                             </p>
                           </div>
@@ -377,72 +442,105 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* Right - Actions */}
-            <div className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-2 lg:space-x-3">
-              {/* Search Button - Mobile First */}
-              <button
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="p-1 xs:p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative touch-manipulation"
-                aria-label="Search"
-              >
-                <Search className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
-              </button>
+            {/* Right Actions */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Search */}
+              <div className="relative" ref={searchRef}>
+                <button
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                  aria-label="Search"
+                >
+                  <Search className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
+                </button>
 
-              {/* Dark Mode Toggle */}
+                {isSearchOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700 z-50 animate-slideDown">
+                    <form onSubmit={handleSearch} className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search for dishes, rooms, or services..."
+                        className="w-full pl-10 pr-24 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-orange-500 transition-all text-sm"
+                        autoFocus
+                      />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex gap-2">
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-orange-500/30 transition-all"
+                        >
+                          Search
+                        </button>
+                      </div>
+                    </form>
+                    <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span>Try: "Butter Chicken", "Suite Room", "Spa"</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Theme Toggle */}
               <button
                 onClick={toggleDarkMode}
-                className="p-1 xs:p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative touch-manipulation"
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                 aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
               >
                 {isDarkMode ? (
-                  <Sun className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform" />
                 ) : (
-                  <Moon className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors" />
                 )}
               </button>
 
-              {/* Notifications - Hidden on smallest screens */}
-              <div className="hidden sm:relative" ref={notificationsRef}>
+              {/* Notifications */}
+              <div className="relative" ref={notificationsRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-1 xs:p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative touch-manipulation"
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative"
                   aria-label="Notifications"
                 >
-                  <Bell className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] xs:text-[10px] sm:text-xs rounded-full w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold animate-ping-once">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                       {unreadNotifications}
                     </span>
                   )}
                 </button>
 
-                {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl py-2 sm:py-3 border border-gray-100 dark:border-gray-700 z-50 animate-fadeIn">
-                    <div className="px-3 sm:px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">Notifications</h3>
-                        <span className="text-xs sm:text-sm text-orange-500 font-medium">Mark all as read</span>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
+                        <span className="text-sm text-orange-500 font-medium">Mark all as read</span>
                       </div>
                     </div>
-                    <div className="max-h-64 sm:max-h-96 overflow-y-auto">
+                    <div className="max-h-96 overflow-y-auto">
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-3 sm:px-4 py-2 sm:py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-l-4 ${
-                            notification.read 
-                              ? 'border-transparent' 
-                              : 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10'
-                          }`}
+                          className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!notification.read ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''
+                            }`}
                         >
-                          <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">{notification.text}</p>
-                          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">{notification.time}</p>
+                          <div className="flex items-start gap-3">
+                            <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-800 dark:text-gray-200">{notification.text}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+                            </div>
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                     <Link
                       to="/notifications"
-                      className="block px-3 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors border-t border-gray-100 dark:border-gray-700"
+                      className="block px-4 py-3 text-center text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors border-t border-gray-100 dark:border-gray-700"
                       onClick={() => setShowNotifications(false)}
                     >
                       View all notifications
@@ -451,70 +549,71 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* Cart Button */}
+              {/* Cart */}
               <button
                 onClick={() => navigate("/cart")}
-                className="relative p-1 xs:p-1.5 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg sm:rounded-xl transition-colors group touch-manipulation"
+                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors group"
                 aria-label="Shopping cart"
               >
-                <ShoppingCart
-                  className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors"
-                />
+                <ShoppingCart className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[8px] xs:text-[10px] sm:text-xs rounded-full w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-6 sm:h-6 flex items-center justify-center font-bold shadow-lg animate-bounce">
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-bounce">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
               </button>
 
-              {/* User Profile - Desktop */}
+              {/* User Profile */}
               <div className="relative" ref={profileRef}>
                 {user ? (
                   <>
                     <button
-                      className="hidden lg:flex items-center gap-1.5 xs:gap-2 p-1 xs:p-1.5 pr-2 xs:pr-3 sm:pr-4 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group touch-manipulation"
+                      className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
                       aria-label="User menu"
                     >
                       <div className="relative">
-                        <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-orange-500/30 group-hover:border-orange-500 transition-colors">
-                          <UserCircle className="w-full h-full text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 p-0.5">
+                          <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
+                            <span className="font-bold text-orange-600 dark:text-orange-400">
+                              {user.name?.charAt(0) || "U"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 xs:-bottom-1 xs:-right-1 w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
                       </div>
-                      <div className="text-left hidden xl:block">
-                        <p className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[80px]">
+                      <div className="hidden lg:block text-left">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
                           {user.name?.split(" ")[0] || "User"}
                         </p>
-                        <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate max-w-[80px]">
-                          {user.role || "Premium Member"}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Gold Member
                         </p>
                       </div>
-                      <ChevronDown className={`w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-4 sm:h-4 text-gray-400 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* Profile Dropdown - Desktop */}
                     {isProfileOpen && (
-                      <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl py-2 sm:py-3 border border-gray-100 dark:border-gray-700 z-50 animate-fadeIn">
-                        <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 dark:border-gray-700">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="w-9 h-9 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-xs xs:text-sm sm:text-lg">
+                      <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">
                                 {user.name?.charAt(0) || "U"}
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                              <h4 className="font-bold text-gray-900 dark:text-white truncate">
                                 {user.name || "User"}
                               </h4>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                                 {user.email || ""}
                               </p>
-                              <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
-                                <span className="text-[9px] xs:text-[10px] sm:text-xs font-medium bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 px-1.5 sm:px-2 py-0.5 rounded-full">
-                                  Gold Member
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                                  Gold Tier
                                 </span>
-                                <span className="text-[9px] xs:text-[10px] sm:text-xs font-medium bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 px-1.5 sm:px-2 py-0.5 rounded-full">
+                                <span className="text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                   250 Points
                                 </span>
                               </div>
@@ -522,373 +621,261 @@ const Navbar = () => {
                           </div>
                         </div>
 
-                        <div className="py-1 sm:py-2">
-                          {[
-                            { path: "/dashboard", label: "My Dashboard", icon: <UserCircle size={16} /> },
-                            { path: "/my-bookings", label: "My Bookings", icon: <Calendar size={16} /> },
-                            { path: "/my-orders", label: "My Orders", icon: <Package size={16} /> },
-                            { path: "/wallet", label: "Wallet", icon: <Wallet size={16} />, badge: "$125" },
-                            { path: "/settings", label: "Settings", icon: <Shield size={16} /> }
-                          ].map((item) => (
+                        <div className="py-2">
+                          {userMenuItems.map((item) => (
                             <Link
                               key={item.path}
                               to={item.path}
-                              className="flex items-center px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5 transition-colors group"
+                              className="flex items-center px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                               onClick={() => setIsProfileOpen(false)}
                             >
-                              <span className="mr-2 sm:mr-3 text-gray-500 group-hover:text-orange-500 transition-colors">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${item.color}`}>
                                 {item.icon}
-                              </span>
+                              </div>
                               <span className="flex-1">{item.label}</span>
                               {item.badge && (
                                 <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full">
                                   {item.badge}
                                 </span>
                               )}
+                              <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
                           ))}
                         </div>
 
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-
-                        <button
-                          onClick={logout}
-                          className="flex items-center w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-500/5 hover:to-red-500/5 transition-colors group"
-                        >
-                          <LogOut size={16} className="mr-2 sm:mr-3" />
-                          Logout
-                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2">
+                          <button
+                            onClick={logout}
+                            className="flex items-center w-full px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group rounded-lg"
+                          >
+                            <LogOut size={18} className="mr-3" />
+                            Logout
+                          </button>
+                        </div>
                       </div>
                     )}
-
-                    {/* Mobile Profile Icon */}
-                    <button
-                      onClick={() => navigate("/profile")}
-                      className="lg:hidden p-1 xs:p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative touch-manipulation"
-                      aria-label="User menu"
-                    >
-                      <UserCircle size={18} className="xs:w-5 xs:h-5 text-gray-700 dark:text-gray-300" />
-                    </button>
                   </>
                 ) : (
                   <>
-                    {/* Desktop Login Button */}
                     <button
                       onClick={() => navigate("/login")}
-                      className="hidden lg:flex group relative bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-xs xs:text-sm sm:text-base px-2.5 xs:px-3 sm:px-6 py-1.5 xs:py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 active:scale-95 touch-manipulation"
+                      className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 active:scale-95"
                     >
+                      <UserCircle size={20} />
                       <span>Sign In</span>
                     </button>
-
-                    {/* Mobile Login Button */}
                     <button
                       onClick={() => navigate("/login")}
-                      className="lg:hidden bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-xs xs:text-sm px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg transition-all duration-300 shadow-lg shadow-orange-500/30 active:scale-95 touch-manipulation"
+                      className="lg:hidden bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-orange-500/30 active:scale-95"
                     >
-                      Login
+                      <UserCircle size={20} />
                     </button>
                   </>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Search Bar */}
-          {isSearchOpen && (
-            <div className="py-2 xs:py-3 sm:py-4 animate-slideDown">
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for dishes, rooms, or services..."
-                  className="w-full pl-8 xs:pl-10 sm:pl-12 pr-16 xs:pr-20 sm:pr-24 py-2 xs:py-3 sm:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-all duration-300 shadow-lg text-xs xs:text-sm sm:text-base"
-                  autoFocus
-                />
-                <Search className="absolute left-2 xs:left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <div className="absolute right-1.5 xs:right-2 sm:right-2 top-1/2 transform -translate-y-1/2 flex gap-1 xs:gap-1.5 sm:gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSearchOpen(false);
-                      setSearchQuery("");
-                    }}
-                    className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-2 xs:px-3 sm:px-5 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[10px] xs:text-xs sm:text-sm font-semibold rounded-md sm:rounded-lg transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 active:scale-95"
-                  >
-                    Search
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
         </div>
 
-        {/* Mobile Sidebar Menu */}
+        {/* Mobile Menu */}
         <div
           ref={mobileMenuRef}
-          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-full xs:w-80 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-in-out ${
-            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
         >
           {/* Mobile Menu Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <ChefHat className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
+                <ChefHat className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white">
-                  The Naivedyam
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Hotel & Dine Inn
-                </p>
+                <h2 className="font-bold text-xl text-gray-900 dark:text-white">The Naivedyam</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Hotel & Fine Dining</p>
               </div>
             </div>
             <button
               onClick={() => setIsMenuOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <X size={24} className="text-gray-700 dark:text-gray-300" />
             </button>
           </div>
 
           {/* Mobile Menu Content */}
-          <div className="h-[calc(100vh-73px)] sm:h-[calc(100vh-89px)] overflow-y-auto">
-            {/* Mobile Menu Sections */}
-            <div className="p-4 sm:p-6">
-              {activeMobileSection === "main" ? (
-                <>
-                  {/* User Profile Section */}
-                  {user ? (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/5 to-amber-500/5 rounded-xl border border-orange-500/10">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg sm:text-xl">
-                              {user.name?.charAt(0) || "U"}
-                            </span>
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+          <div className="h-[calc(100vh-80px)] overflow-y-auto pb-24">
+            {activeMobileSection === "main" ? (
+              <div className="p-6">
+                {/* User Profile */}
+                {user ? (
+                  <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/10 to-amber-500/10 rounded-2xl border border-orange-500/20">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="relative">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-xl">{user.name?.charAt(0) || "U"}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-gray-900 dark:text-white truncate">
-                            {user.name || "User"}
-                          </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {user.email || ""}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-[10px] font-medium bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                              Gold Member
-                            </span>
-                            <span className="text-[10px] font-medium bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                              250 Points
-                            </span>
-                          </div>
-                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-4">
-                        <button
-                          onClick={() => handleMobileNavigation("/dashboard")}
-                          className="flex items-center justify-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <UserCircle size={16} />
-                          <span className="text-xs font-medium">Profile</span>
-                        </button>
-                        <button
-                          onClick={() => handleMobileNavigation("/my-orders")}
-                          className="flex items-center justify-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <Package size={16} />
-                          <span className="text-xs font-medium">Orders</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mb-6">
-                      <button
-                        onClick={() => handleMobileNavigation("/login")}
-                        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-orange-500/30 transition-all duration-300 active:scale-95"
-                      >
-                        Sign In / Register
-                      </button>
-                      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                        Get exclusive deals & 15% off first order
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Main Navigation Links */}
-                  <div className="space-y-2 mb-6">
-                    <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                      Main Navigation
-                    </h3>
-                    {mobileSections.main.items.map((item) => (
-                      <button
-                        key={item.path}
-                        onClick={() => handleMobileNavigation(item.path)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
-                          isActive(item.path)
-                            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`${isActive(item.path) ? 'text-orange-500' : 'text-gray-500'}`}>
-                            {item.icon}
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 dark:text-white">{user.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                            Gold Member
                           </span>
-                          <span className="font-medium">{item.label}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {item.badge && (
-                            <span className="text-[10px] font-medium bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-0.5 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                          <ChevronRight size={16} className="text-gray-400" />
-                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => handleMobileNavigation("/dashboard")} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <UserCircle size={18} />
+                        <span className="text-sm font-medium">Profile</span>
                       </button>
-                    ))}
+                      <button onClick={() => handleMobileNavigation("/my-orders")} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <Package size={18} />
+                        <span className="text-sm font-medium">Orders</span>
+                      </button>
+                    </div>
                   </div>
-
-                  {/* About Section */}
+                ) : (
                   <div className="mb-6">
                     <button
-                      onClick={() => setActiveMobileSection("about")}
-                      className="w-full flex items-center justify-between p-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                      onClick={() => handleMobileNavigation("/login")}
+                      className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-4 rounded-2xl shadow-lg shadow-orange-500/30 transition-all duration-300 active:scale-95"
                     >
-                      <div className="flex items-center gap-3">
-                        <Info size={18} className="text-gray-500" />
-                        <span className="font-medium">About Us</span>
-                      </div>
-                      <ChevronRight size={16} className="text-gray-400" />
+                      Sign In / Register
                     </button>
                   </div>
+                )}
 
-                  {/* Quick Actions */}
-                  <div className="space-y-2">
-                    <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                      Quick Actions
-                    </h3>
-                    {mobileSections.quick.items.map((item, index) => (
+                {/* Navigation */}
+                <div className="space-y-2 mb-6">
+                  <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
+                    Navigation
+                  </h3>
+                  {navItems.map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => handleMobileNavigation(item.path)}
+                      className={`w-full flex items-center justify-between p-4 rounded-xl transition-all ${isActive(item.path)
+                        ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={isActive(item.path) ? 'text-orange-500' : 'text-gray-500'}>
+                          {item.icon}
+                        </span>
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {item.badge && (
+                          <span className="text-xs font-medium bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-0.5 rounded-full">
+                            {item.badge}
+                          </span>
+                        )}
+                        <ChevronRight size={18} className="text-gray-400" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="mb-6">
+                  <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
+                    Quick Actions
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {quickActions.map((action, index) => (
                       <button
                         key={index}
-                        onClick={item.action}
-                        className="w-full flex items-center gap-3 p-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onClick={action.action}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all hover:scale-105 ${action.color}`}
                       >
+                        {action.icon}
+                        <span className="text-xs font-medium mt-2">{action.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* About Section */}
+                <button
+                  onClick={() => setActiveMobileSection("about")}
+                  className="w-full flex items-center justify-between p-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Info size={20} className="text-gray-500" />
+                    <span className="font-medium">About Us</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-400" />
+                </button>
+              </div>
+            ) : (
+              <div className="p-6">
+                <button
+                  onClick={() => setActiveMobileSection("main")}
+                  className="flex items-center gap-2 mb-6 p-2 text-gray-600 dark:text-gray-400 hover:text-orange-500"
+                >
+                  <ChevronRight size={20} className="rotate-180" />
+                  <span className="font-medium">Back</span>
+                </button>
+                <div className="space-y-2">
+                  {aboutItems.map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => handleMobileNavigation(item.path)}
+                      className="w-full flex items-center justify-between p-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
                         {item.icon}
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : activeMobileSection === "about" ? (
-                <div>
-                  {/* Back Button */}
-                  <button
-                    onClick={() => setActiveMobileSection("main")}
-                    className="flex items-center gap-2 mb-6 p-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 transition-colors"
-                  >
-                    <ChevronRight size={20} className="rotate-180" />
-                    <span className="font-medium">Back</span>
-                  </button>
-
-                  {/* About Links */}
-                  <div className="space-y-2">
-                    <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                      About The Naivedyam
-                    </h3>
-                    {mobileSections.about.items.map((item) => (
-                      <button
-                        key={item.path}
-                        onClick={() => handleMobileNavigation(item.path)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
-                          isActive(item.path)
-                            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          {item.icon}
-                          <span className="font-medium">{item.label}</span>
+                        <div className="text-left">
+                          <div className="font-medium">{item.label}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{item.desc}</div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {item.badge && (
-                            <span className="text-[10px] font-medium bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                          <ChevronRight size={16} className="text-gray-400" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Mobile Menu Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={toggleDarkMode}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    {isDarkMode ? (
-                      <Sun size={20} className="text-amber-400" />
-                    ) : (
-                      <Moon size={20} className="text-gray-600 dark:text-gray-400" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
-                  >
-                    <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-                    {unreadNotifications > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                        {unreadNotifications}
-                      </span>
-                    )}
-                  </button>
-                </div>
-                {user && (
-                  <button
-                    onClick={logout}
-                    className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
-                  >
-                    <LogOut size={18} />
-                    <span className="font-medium">Logout</span>
-                  </button>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <div className="flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>© 2024 The Naivedyam</span>
-                  <span>•</span>
-                  <span>All rights reserved</span>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-400" />
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Mobile Menu Overlay */}
         {isMenuOpen && (
-          <div 
+          <div
             className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fadeIn"
             onClick={() => setIsMenuOpen(false)}
           />
         )}
       </nav>
+
+      {/* Add these animations to your global CSS */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   );
 };
