@@ -1,129 +1,87 @@
-import { createContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// AppContext.jsx
+import { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
 export const AppContext = createContext();
 
-import axios from "axios";
-axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
-axios.defaults.withCredentials = true;
-import { toast } from "react-hot-toast";
 const AppContextProvider = ({ children }) => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [admin, setAdmin] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [menus, setMenus] = useState([]);
+  const [admin, setAdmin] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Create axios instance with base URL
+  const axiosInstance = axios.create({
+    baseURL: 'http://localhost:5000',
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
 
-  const [cart, setCart] = useState([]);
-  const [totalPrice, setTotalPrice] = useState(0);
-
-  const fetchCartData = async () => {
-    try {
-      const { data } = await axios.get("/api/cart/get");
-      if (data.success) {
-        setCart(data.cart);
+  // Add request interceptor to handle errors
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        // Clear user data on unauthorized
+        setUser(null);
+        setAdmin(false);
+        setCartCount(0);
       }
-    } catch (error) {
-      console.log(error);
+      return Promise.reject(error);
     }
-  };
-  useEffect(() => {
-    if (cart?.items) {
-      const total = cart.items.reduce(
-        (sum, item) => sum + item.menuItem.price * item.quantity,
-        0
-      );
-      setTotalPrice(total);
-    }
-  }, [cart]);
-  const cartCount = cart?.items?.reduce(
-    (acc, item) => acc + item.quantity,
-    0 || 0
   );
-  // 🔹 Add to Cart function
-  const addToCart = async (menuId) => {
-    try {
-      const { data } = await axios.post("/api/cart/add", {
-        menuId,
-        quantity: 1,
-      });
-      if (data.success) {
-        toast.success(data.message);
-        fetchCartData();
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      console.error("Add to cart error:", error);
-      toast.error("Something went wrong!");
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const { data } = await axios.get("/api/category/all");
-
-      if (data.success) {
-        setCategories(data.categories);
-      } else {
-        logconsole.log("Failed to fetch categories");
-      }
-    } catch (error) {
-      console.log("Error fetching categories:", error);
-    }
-  };
-  const fetchMenus = async () => {
-    try {
-      const { data } = await axios.get("/api/menu/all");
-
-      if (data.success) {
-        setMenus(data.menuItems);
-      } else {
-        console.log("Failed to fetch menus");
-      }
-    } catch (error) {
-      console.log("Error fetching menus:", error);
-    }
-  };
 
   const isAuth = async () => {
     try {
-      const { data } = await axios.get("/api/auth/is-auth");
+      const { data } = await axiosInstance.get('/api/auth/is-auth');
       if (data.success) {
         setUser(data.user);
+        setAdmin(data.user?.role === 'admin');
       }
     } catch (error) {
-      console.log(error);
+      // Silently handle auth errors - user is not logged in
+      console.log('Auth check failed:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCartData = async () => {
+    try {
+      const { data } = await axiosInstance.get('/api/cart/get');
+      if (data.success) {
+        setCartCount(data.cart?.items?.length || 0);
+      }
+    } catch (error) {
+      // Silently handle cart errors
+      console.log('Cart fetch failed:', error.message);
     }
   };
 
   useEffect(() => {
     isAuth();
-    fetchCategories();
-    fetchMenus();
     fetchCartData();
   }, []);
-  const value = {
-    navigate,
-    loading,
-    setLoading,
-    user,
-    setUser,
-    axios,
-    admin,
-    setAdmin,
-    categories,
-    fetchCategories,
-    menus,
-    fetchMenus,
-    addToCart,
-    cartCount,
-    cart,
-    totalPrice,
-    fetchCartData,
-  };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider
+      value={{
+        user,
+        setUser,
+        admin,
+        setAdmin,
+        cartCount,
+        setCartCount,
+        axios: axiosInstance,
+        isLoading
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
 };
 
 export default AppContextProvider;

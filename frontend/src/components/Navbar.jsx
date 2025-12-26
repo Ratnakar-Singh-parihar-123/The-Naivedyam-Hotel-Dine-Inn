@@ -13,42 +13,57 @@ import {
   Sun,
   Home,
   Phone,
-  BookOpen,
   Search,
   Bell,
-  ChefHat,
-  Sparkles,
   Hotel,
-  UtensilsCrossed,
   MapPin,
   Clock,
   Info,
   Users,
   Award,
-  Globe,
   ChevronDown,
   ChevronRight,
   Star,
-  Tag,
-  Wallet,
   Shield,
   Gift,
   HelpCircle,
-  MessageSquare,
+  MessageCircle,
   Heart,
   TrendingUp,
-  ShieldCheck,
   CreditCard,
   Settings,
-  Map,
   Mail,
-  ExternalLink,
   Wifi,
   Coffee,
   Car,
   Dumbbell,
   Bath,
-  Tv
+  Tv,
+  UtensilsCrossed,
+  ShieldCheck,
+  Globe,
+  Headphones,
+  Map,
+  Zap,
+  Crown,
+  Briefcase,
+  Building,
+  Waves,
+  Wind,
+  Key,
+  Smartphone,
+  PhoneCall,
+  ExternalLink,
+  CheckCircle,
+  ArrowRight,
+  Menu as MenuIcon,
+  BookOpen,
+  Tag,
+  Sparkles,
+  Award as AwardIcon,
+  TrendingUp as TrendingUpIcon,
+  Users as UsersIcon,
+  Heart as HeartIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -63,150 +78,186 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
-  const [activeMobileSection, setActiveMobileSection] = useState("main");
+  const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isSearchMobile, setIsSearchMobile] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [activeMobileSection, setActiveMobileSection] = useState("main");
 
   const [notifications] = useState([
-    { id: 1, text: "Your table reservation is confirmed", time: "10 min ago", read: false, type: "booking" },
-    { id: 2, text: "Special discount on Italian dishes", time: "1 hour ago", read: false, type: "offer" },
-    { id: 3, text: "Order #1234 is being prepared", time: "2 hours ago", read: true, type: "order" },
-    { id: 4, text: "Your review got 50 likes", time: "5 hours ago", read: false, type: "social" },
-    { id: 5, text: "Payment successful for order #5678", time: "1 day ago", read: true, type: "payment" }
+    { id: 1, text: "Your hotel booking is confirmed", time: "10 min ago", read: false, type: "booking", icon: "🏨" },
+    { id: 2, text: "Special discount on luxury suites", time: "1 hour ago", read: false, type: "offer", icon: "🎁" },
+    { id: 3, text: "Room service order delivered", time: "2 hours ago", read: true, type: "order", icon: "🚪" },
+    { id: 4, text: "Your review got featured", time: "5 hours ago", read: false, type: "social", icon: "⭐" },
+    { id: 5, text: "Payment successful for booking #5678", time: "1 day ago", read: true, type: "payment", icon: "💳" }
   ]);
 
+  // Refs for click outside detection
   const profileRef = useRef(null);
   const notificationsRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const aboutDropdownRef = useRef(null);
+  const servicesDropdownRef = useRef(null);
   const searchRef = useRef(null);
   const navbarRef = useRef(null);
 
-  // Touch-friendly close handlers
-  const closeAllMenus = () => {
-    setIsMenuOpen(false);
-    setIsProfileOpen(false);
-    setShowNotifications(false);
-    setIsAboutDropdownOpen(false);
-    setIsSearchOpen(false);
-    setIsSearchMobile(false);
+  // Navigation data
+  const mainNavItems = [
+    { path: "/", label: "Home", icon: <Home size={20} />, badge: "New", color: "text-orange-500" },
+    { path: "/hotels", label: "Hotels", icon: <Hotel size={20} />, badge: "Featured", color: "text-blue-500", featured: true },
+    { path: "/restaurants", label: "Restaurants", icon: <UtensilsCrossed size={20} />, badge: "Fine Dining", color: "text-amber-500" },
+    { path: "/book-now", label: "Book Now", icon: <Calendar size={20} />, badge: "24/7", color: "text-green-500", cta: true },
+  ];
+
+  const servicesItems = [
+    { 
+      category: "Accommodation",
+      items: [
+        { path: "/rooms/suites", label: "Luxury Suites", icon: <Crown size={18} />, desc: "Premium suites with ocean view" },
+        { path: "/rooms/executive", label: "Executive Rooms", icon: <Briefcase size={18} />, desc: "For business travelers" },
+        { path: "/rooms/family", label: "Family Rooms", icon: <Users size={18} />, desc: "Spacious family accommodation" },
+        { path: "/rooms/honeymoon", label: "Honeymoon Suites", icon: <Heart size={18} />, desc: "Romantic getaway packages" },
+      ]
+    },
+    {
+      category: "Dining",
+      items: [
+        { path: "/restaurants/indian", label: "Indian Cuisine", icon: <Coffee size={18} />, desc: "Authentic Indian dishes" },
+        { path: "/restaurants/international", label: "International", icon: <Globe size={18} />, desc: "World cuisine selection" },
+        { path: "/restaurants/rooftop", label: "Rooftop Bar", icon: <Waves size={18} />, desc: "Skyline views with drinks" },
+        { path: "/restaurants/24hours", label: "24-Hour Cafe", icon: <Clock size={18} />, desc: "Round-the-clock service" },
+      ]
+    },
+    {
+      category: "Amenities",
+      items: [
+        { path: "/amenities/spa", label: "Spa & Wellness", icon: <Bath size={18} />, desc: "Relaxation therapies" },
+        { path: "/amenities/pool", label: "Infinity Pool", icon: <Waves size={18} />, desc: "Panoramic view pool" },
+        { path: "/amenities/gym", label: "Fitness Center", icon: <Dumbbell size={18} />, desc: "Modern gym equipment" },
+        { path: "/amenities/business", label: "Business Center", icon: <Briefcase size={18} />, desc: "Meeting rooms & facilities" },
+      ]
+    }
+  ];
+
+  const aboutItems = [
+    { path: "/about", label: "Our Story", icon: <Heart size={18} />, desc: "Journey of excellence" },
+    { path: "/team", label: "Our Team", icon: <Users size={18} />, desc: "Meet our experts" },
+    { path: "/awards", label: "Awards", icon: <Award size={18} />, desc: "Recognitions & achievements", badge: "25+" },
+    { path: "/sustainability", label: "Sustainability", icon: <ShieldCheck size={18} />, desc: "Eco-friendly initiatives" },
+    { path: "/careers", label: "Careers", icon: <TrendingUp size={18} />, desc: "Join our team", badge: "Hiring" },
+    { path: "/contact", label: "Contact Us", icon: <PhoneCall size={18} />, desc: "Get in touch 24/7" },
+  ];
+
+  const userMenuItems = [
+    { path: "/dashboard", label: "Dashboard", icon: <UserCircle size={18} /> },
+    { path: "/my-bookings", label: "My Bookings", icon: <Calendar size={18} />, badge: "3" },
+    { path: "/my-orders", label: "Room Service", icon: <Package size={18} /> },
+    { path: "/wishlist", label: "Wishlist", icon: <Heart size={18} />, badge: "12" },
+    { path: "/wallet", label: "Wallet", icon: <CreditCard size={18} />, badge: "$125" },
+    { path: "/settings", label: "Settings", icon: <Settings size={18} /> },
+  ];
+
+  // Mobile menu sections
+  const mobileSections = {
+    main: { label: "Main Menu", icon: <Home size={18} /> },
+    services: { label: "Services", icon: <MenuIcon size={18} /> },
+    about: { label: "About", icon: <Info size={18} /> },
+    contact: { label: "Contact", icon: <PhoneCall size={18} /> }
   };
 
-  // Scroll effect for navbar - mobile optimized
+  // Hotel features for mobile
+  const hotelFeatures = [
+    { icon: <Wifi size={18} />, label: "Free WiFi", color: "text-blue-500" },
+    { icon: <Coffee size={18} />, label: "Breakfast", color: "text-amber-500" },
+    { icon: <Car size={18} />, label: "Parking", color: "text-gray-500" },
+    { icon: <Dumbbell size={18} />, label: "Gym", color: "text-red-500" },
+    { icon: <Bath size={18} />, label: "Spa", color: "text-pink-500" },
+    { icon: <Tv size={18} />, label: "Entertainment", color: "text-purple-500" },
+    { icon: <Wind size={18} />, label: "AC", color: "text-cyan-500" },
+    { icon: <Key size={18} />, label: "Safe", color: "text-yellow-500" },
+  ];
+
+  // Scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setScrolled(scrollY > 5);
-      
-      // Auto close dropdowns on scroll
-      if (scrollY > 50) {
-        setIsProfileOpen(false);
-        setShowNotifications(false);
-        setIsAboutDropdownOpen(false);
-      }
+      setScrolled(window.scrollY > 10);
     };
-    
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Touch event for mobile
-  useEffect(() => {
-    const handleTouchMove = (e) => {
-      if (isMenuOpen) {
-        e.preventDefault();
-      }
-    };
-
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-      document.body.style.position = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-      document.body.style.position = '';
-    };
-  }, [isMenuOpen]);
-
-  // Check for saved theme preference
+  // Theme detection
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
+    
     if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.classList.add("dark");
-    } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove("dark");
     }
   }, []);
 
-  // Close dropdowns when clicking outside - mobile optimized
+  // Click outside handlers
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Profile dropdown
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
+      // Notifications dropdown
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && isMenuOpen) {
-        setIsMenuOpen(false);
-      }
+      // About dropdown
       if (aboutDropdownRef.current && !aboutDropdownRef.current.contains(event.target)) {
         setIsAboutDropdownOpen(false);
       }
-      if (searchRef.current && !searchRef.current.contains(event.target) && isSearchOpen) {
+      // Services dropdown
+      if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(event.target)) {
+        setIsServicesDropdownOpen(false);
+      }
+      // Search dropdown
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
         setIsSearchOpen(false);
+      }
+      // Mobile menu
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && isMenuOpen) {
+        setIsMenuOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
-
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isMenuOpen, isSearchOpen]);
+  }, [isMenuOpen]);
+
+  // Body scroll lock for mobile menu
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-
+    
     if (newMode) {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
-      toast.success("Dark mode activated", {
-        duration: 1500,
-        icon: '🌙',
-        style: {
-          background: '#1f2937',
-          color: '#fff',
-          border: '1px solid #374151'
-        }
-      });
+      toast.success("Dark mode activated");
     } else {
       document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
-      toast.success("Light mode activated", {
-        duration: 1500,
-        icon: '☀️',
-        style: {
-          background: '#fff',
-          color: '#1f2937',
-          border: '1px solid #e5e7eb'
-        }
-      });
+      toast.success("Light mode activated");
     }
   };
 
@@ -215,69 +266,25 @@ const Navbar = () => {
       const { data } = await axios.post("/api/auth/logout");
       if (data.success) {
         setUser(null);
-        toast.success(data.message, {
-          icon: '👋',
-          style: {
-            background: '#10b981',
-            color: '#fff',
-          }
-        });
+        toast.success("Logged out successfully");
         navigate("/");
         closeAllMenus();
       }
     } catch (error) {
-      console.log(error);
       toast.error("Logout failed. Please try again.");
     }
   };
 
-  // Navigation items with icons - Mobile optimized
-  const navItems = [
-    { path: "/", label: "Home", icon: <Home size={22} />, badge: "Popular", featured: true },
-    { path: "/menu", label: "Menu", icon: <BookOpen size={22} />, badge: "New", featured: true },
-    { path: "/rooms", label: "Rooms", icon: <Hotel size={22} />, badge: "Luxury", featured: true },
-    { path: "/book-table", label: "Book Table", icon: <Calendar size={22} />, badge: "Hot" },
-  ];
+  const closeAllMenus = () => {
+    setIsMenuOpen(false);
+    setIsProfileOpen(false);
+    setIsSearchOpen(false);
+    setShowNotifications(false);
+    setIsAboutDropdownOpen(false);
+    setIsServicesDropdownOpen(false);
+    setIsMobileSearchOpen(false);
+  };
 
-  // About dropdown items
-  const aboutItems = [
-    { path: "/about", label: "Our Story", icon: <Heart size={20} />, desc: "Learn about our journey" },
-    { path: "/team", label: "Our Team", icon: <Users size={20} />, desc: "Meet our talented chefs" },
-    { path: "/awards", label: "Awards", icon: <Award size={20} />, desc: "Our achievements", badge: "25+" },
-    { path: "/testimonials", label: "Testimonials", icon: <MessageSquare size={20} />, desc: "Customer stories" },
-    { path: "/careers", label: "Careers", icon: <TrendingUp size={20} />, desc: "Join our team", badge: "Hiring" },
-    { path: "/contact", label: "Contact", icon: <Phone size={20} />, desc: "Get in touch" },
-  ];
-
-  // User menu items
-  const userMenuItems = [
-    { path: "/dashboard", label: "Dashboard", icon: <UserCircle size={20} />, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
-    { path: "/my-bookings", label: "My Bookings", icon: <Calendar size={20} />, color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" },
-    { path: "/my-orders", label: "My Orders", icon: <Package size={20} />, color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400", badge: "3" },
-    { path: "/wishlist", label: "Wishlist", icon: <Heart size={20} />, color: "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400", badge: "12" },
-    { path: "/wallet", label: "Wallet", icon: <CreditCard size={20} />, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", badge: "$125" },
-    { path: "/settings", label: "Settings", icon: <Settings size={20} />, color: "bg-gray-100 dark:bg-gray-800/30 text-gray-600 dark:text-gray-400" },
-  ];
-
-  // Quick actions for mobile
-  const quickActions = [
-    { label: "Track Order", icon: <Package size={22} />, action: () => navigate("/track-order"), color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30" },
-    { label: "Gift Cards", icon: <Gift size={22} />, action: () => navigate("/gift-cards"), color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30" },
-    { label: "Help Center", icon: <HelpCircle size={22} />, action: () => navigate("/help"), color: "bg-green-100 text-green-600 dark:bg-green-900/30" },
-    { label: "Live Chat", icon: <MessageSquare size={22} />, action: () => navigate("/chat"), color: "bg-pink-100 text-pink-600 dark:bg-pink-900/30" },
-  ];
-
-  // Hotel features for mobile
-  const hotelFeatures = [
-    { icon: <Wifi size={18} />, label: "Free WiFi" },
-    { icon: <Coffee size={18} />, label: "Breakfast" },
-    { icon: <Car size={18} />, label: "Parking" },
-    { icon: <Dumbbell size={18} />, label: "Gym" },
-    { icon: <Bath size={18} />, label: "Spa" },
-    { icon: <Tv size={18} />, label: "Entertainment" },
-  ];
-
-  // Check if a link is active
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -287,52 +294,36 @@ const Navbar = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setIsSearchOpen(false);
-      setIsSearchMobile(false);
+      closeAllMenus();
       setSearchQuery("");
     }
   };
 
-  const unreadNotifications = notifications.filter(n => !n.read).length;
-
-  // Mobile navigation handler
   const handleMobileNavigation = (path) => {
     navigate(path);
     closeAllMenus();
   };
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'booking': return '📅';
-      case 'offer': return '🎁';
-      case 'order': return '🍽️';
-      case 'social': return '❤️';
-      case 'payment': return '💳';
-      default: return '🔔';
-    }
-  };
+  const unreadNotifications = notifications.filter(n => !n.read).length;
 
   return (
     <>
-      {/* Top Announcement Bar - Mobile Optimized */}
-      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white py-2 px-3 md:px-4 overflow-x-auto scrollbar-hide">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between md:justify-center gap-3 md:gap-6 whitespace-nowrap text-xs md:text-sm">
-            <div className="flex items-center gap-2">
-              <Clock size={14} className="flex-shrink-0" />
-              <span>11AM - 11PM</span>
+      {/* Top Announcement Bar */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 px-4">
+        <div className="max-w-8xl mx-auto">
+          <div className="flex items-center justify-center md:justify-between gap-4 text-sm">
+            <div className="hidden md:flex items-center gap-2">
+              <Clock size={14} />
+              <span>Check-in: 2PM • Check-out: 12PM</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone size={14} />
+              <span className="font-semibold">+91 9399741051</span>
+              <span className="hidden sm:inline">• 24/7 Support</span>
             </div>
             <div className="hidden md:flex items-center gap-2">
-              <MapPin size={14} className="flex-shrink-0" />
-              <span>123 Luxury Avenue</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone size={14} className="flex-shrink-0" />
-              <span>+91 9399741051</span>
-            </div>
-            <div className="hidden lg:flex items-center gap-2">
-              <Tag size={14} className="flex-shrink-0" />
-              <span>15% Off • WELCOME15</span>
+              <Tag size={14} />
+              <span className="font-bold">WELCOME15 • 15% Off First Booking</span>
             </div>
           </div>
         </div>
@@ -341,19 +332,20 @@ const Navbar = () => {
       {/* Main Navbar */}
       <nav 
         ref={navbarRef}
-        className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-          ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-lg border-b border-gray-200 dark:border-gray-800'
-          : 'bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800'
-          }`}
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-lg border-b border-gray-200 dark:border-gray-800' 
+            : 'bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800'
+        }`}
       >
-        <div className="max-w-7xl mx-auto px-3 md:px-4">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Left Section - Logo & Mobile Menu */}
-            <div className="flex items-center flex-1 md:flex-none">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            {/* Logo & Mobile Menu */}
+            <div className="flex items-center gap-4">
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden mr-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all touch-manipulation"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Toggle menu"
               >
                 {isMenuOpen ? (
@@ -363,103 +355,137 @@ const Navbar = () => {
                 )}
               </button>
 
-              {/* Logo - Responsive */}
+              {/* Logo */}
               <Link 
                 to="/" 
-                className="flex items-center group active:scale-95 transition-transform touch-manipulation"
+                className="flex items-center gap-2 group"
                 onClick={closeAllMenus}
               >
-                <div className="relative">
-                  <div className="flex items-center justify-center h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 shadow-md shadow-orange-500/30 transition-all duration-300 group-hover:shadow-orange-500/50">
-                    <div className="flex items-center gap-2">
-                      <ChefHat className="w-4 h-4 md:w-5 md:h-5 text-white flex-shrink-0" />
-                      <span className="text-white font-bold text-sm md:text-base lg:text-lg tracking-tight whitespace-nowrap">
-                        The<span className="text-amber-200">Naivedyam</span>
-                      </span>
-                    </div>
+                <div className="flex items-center justify-center w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-500/30">
+                  <Hotel className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <div className="font-bold text-xl lg:text-2xl text-gray-900 dark:text-white">
+                    The<span className="text-blue-600 dark:text-blue-400"> Naivedyam</span>
                   </div>
-                  <div className="absolute -bottom-1.5 -right-1.5 md:-bottom-2 md:-right-2 w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
-                    <UtensilsCrossed className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Luxury Hospitality</div>
                 </div>
               </Link>
             </div>
 
-            {/* Desktop Navigation - Hidden on Mobile */}
-            <div className="hidden md:flex items-center space-x-1 lg:space-x-2 mx-2 xl:mx-4">
-              {navItems.map((item) => (
+            {/* Desktop Navigation - Center */}
+            <div className="hidden lg:flex items-center gap-1">
+              {mainNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative flex items-center px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl transition-all duration-300 font-medium lg:font-semibold group ${isActive(item.path)
-                    ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-lg shadow-orange-500/10"
-                    : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
-                    }`}
+                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium ${
+                    isActive(item.path)
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  } ${item.cta ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600' : ''}`}
                 >
-                  <span className="mr-1.5 lg:mr-2 group-hover:scale-110 transition-transform">
-                    {item.icon}
-                  </span>
-                  <span className="text-sm lg:text-base">{item.label}</span>
-                  {item.badge && (
-                    <span className={`absolute -top-1 -right-1 text-white text-xs px-1.5 py-0.5 rounded-full ${item.featured ? 'bg-gradient-to-r from-pink-500 to-rose-500 animate-pulse' : 'bg-gradient-to-r from-orange-500 to-amber-500'
-                      }`}>
+                  <span className={item.color}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  {item.badge && !item.cta && (
+                    <span className={`absolute -top-1 -right-1 text-xs px-1.5 py-0.5 rounded-full ${
+                      item.featured 
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' 
+                        : 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
                 </Link>
               ))}
 
-              {/* About Dropdown - Desktop */}
+              {/* Services Dropdown */}
+              <div className="relative" ref={servicesDropdownRef}>
+                <button
+                  onClick={() => setIsServicesDropdownOpen(!isServicesDropdownOpen)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium ${
+                    isServicesDropdownOpen || location.pathname.startsWith('/rooms') || 
+                    location.pathname.startsWith('/restaurants') || location.pathname.startsWith('/amenities')
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <MenuIcon size={20} className="text-blue-500" />
+                  <span>Services</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isServicesDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isServicesDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-2 w-[800px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-4 border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      {servicesItems.map((category, index) => (
+                        <div key={index} className="space-y-4">
+                          <h4 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">
+                            {category.category}
+                          </h4>
+                          <div className="space-y-3">
+                            {category.items.map((item) => (
+                              <Link
+                                key={item.path}
+                                to={item.path}
+                                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                                onClick={() => setIsServicesDropdownOpen(false)}
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                  {item.icon}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">{item.label}</div>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.desc}</p>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* About Dropdown */}
               <div className="relative" ref={aboutDropdownRef}>
                 <button
                   onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
-                  className={`flex items-center px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl transition-all duration-300 font-medium lg:font-semibold group ${isAboutDropdownOpen || location.pathname.startsWith('/about') ||
-                    location.pathname.startsWith('/team') || location.pathname.startsWith('/testimonials')
-                    ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30"
-                    : "text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5"
-                    }`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium ${
+                    isAboutDropdownOpen || location.pathname.startsWith('/about')
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
                 >
-                  <Info size={20} className="mr-1.5 lg:mr-2" />
-                  <span className="text-sm lg:text-base">About</span>
-                  <ChevronDown className={`w-3 h-3 lg:w-4 lg:h-4 ml-1 transition-transform duration-300 ${isAboutDropdownOpen ? 'rotate-180' : ''}`} />
+                  <Info size={20} />
+                  <span>About</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isAboutDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isAboutDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
+                  <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <h3 className="font-bold text-gray-900 dark:text-white">About Naivedyam</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white">About Us</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Luxury dining & hospitality
+                        Luxury hospitality since 1995
                       </p>
                     </div>
-                    <div className="py-2 max-h-96 overflow-y-auto">
+                    <div className="py-2">
                       {aboutItems.map((item) => (
                         <Link
                           key={item.path}
                           to={item.path}
-                          className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-500/5 hover:to-amber-500/5 transition-colors group active:bg-orange-500/10"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           onClick={() => setIsAboutDropdownOpen(false)}
                         >
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${item.path.includes('team') ? 'bg-blue-100 dark:bg-blue-900/30' :
-                            item.path.includes('awards') ? 'bg-amber-100 dark:bg-amber-900/30' :
-                              'bg-orange-100 dark:bg-orange-900/30'
-                            }`}>
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             {item.icon}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{item.label}</span>
-                              {item.badge && (
-                                <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 py-0.5 rounded-full">
-                                  {item.badge}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {item.desc}
-                            </p>
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">{item.label}</div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                         </Link>
                       ))}
                     </div>
@@ -468,51 +494,40 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* Right Actions - Mobile & Desktop */}
-            <div className="flex items-center space-x-1 md:space-x-2 lg:space-x-3">
-              {/* Mobile Search Button */}
+            {/* Right Actions */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Mobile Search */}
               <button
-                onClick={() => setIsSearchMobile(true)}
-                className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95 touch-manipulation"
+                onClick={() => setIsMobileSearchOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Search"
               >
-                <Search className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Search size={20} className="text-gray-600 dark:text-gray-400" />
               </button>
 
               {/* Desktop Search */}
-              <div className="hidden md:relative" ref={searchRef}>
+              <div className="hidden lg:relative" ref={searchRef}>
                 <button
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group active:scale-95"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   aria-label="Search"
                 >
-                  <Search className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
+                  <Search size={20} className="text-gray-600 dark:text-gray-400" />
                 </button>
 
                 {isSearchOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-72 lg:w-80 xl:w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700 z-50 animate-slideDown">
+                  <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700 z-50">
                     <form onSubmit={handleSearch} className="relative">
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search dishes, rooms..."
-                        className="w-full pl-10 pr-24 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-orange-500 transition-all text-sm"
+                        placeholder="Search hotels, rooms, restaurants..."
+                        className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-blue-500 transition-all"
                         autoFocus
                       />
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex gap-2">
-                        <button
-                          type="submit"
-                          className="px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-95"
-                        >
-                          Search
-                        </button>
-                      </div>
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </form>
-                    <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                      <span>Try: "Butter Chicken", "Suite Room"</span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -520,80 +535,67 @@ const Navbar = () => {
               {/* Theme Toggle */}
               <button
                 onClick={toggleDarkMode}
-                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group active:scale-95 touch-manipulation"
-                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Toggle theme"
               >
                 {isDarkMode ? (
-                  <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform" />
+                  <Sun size={20} className="text-amber-400" />
                 ) : (
-                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  <Moon size={20} className="text-gray-600 dark:text-gray-400" />
                 )}
               </button>
 
-              {/* Notifications - Hidden on small mobile */}
-              <div className="hidden sm:relative" ref={notificationsRef}>
+              {/* Notifications */}
+              <div className="relative" ref={notificationsRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative active:scale-95 touch-manipulation"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
                   aria-label="Notifications"
                 >
-                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  <Bell size={20} className="text-gray-600 dark:text-gray-400" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold animate-pulse">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                       {unreadNotifications}
                     </span>
                   )}
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-gray-900 dark:text-white text-sm">Notifications</h3>
-                        <span className="text-xs text-orange-500 font-medium">Mark all as read</span>
-                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:bg-gray-100 dark:active:bg-gray-700 ${!notification.read ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''
-                            }`}
-                          onClick={() => setShowNotifications(false)}
+                          className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                            !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                          }`}
                         >
                           <div className="flex items-start gap-3">
-                            <span className="text-lg">{getNotificationIcon(notification.type)}</span>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-800 dark:text-gray-200">{notification.text}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+                            <span className="text-xl">{notification.icon}</span>
+                            <div>
+                              <p className="text-gray-800 dark:text-gray-200">{notification.text}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
                             </div>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
-                            )}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <Link
-                      to="/notifications"
-                      className="block px-4 py-3 text-center text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors border-t border-gray-100 dark:border-gray-700 active:bg-orange-100"
-                      onClick={() => setShowNotifications(false)}
-                    >
-                      View all notifications
-                    </Link>
                   </div>
                 )}
               </div>
 
-              {/* Cart - Always Visible */}
+              {/* Cart */}
               <button
                 onClick={() => navigate("/cart")}
-                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors group active:scale-95 touch-manipulation"
-                aria-label="Shopping cart"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+                aria-label="Cart"
               >
-                <ShoppingCart className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors" />
+                <ShoppingCart size={20} className="text-gray-600 dark:text-gray-400" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse">
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
@@ -604,387 +606,298 @@ const Navbar = () => {
                 {user ? (
                   <>
                     <button
-                      className="hidden md:flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group active:scale-95"
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
+                      className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       aria-label="User menu"
                     >
-                      <div className="relative">
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 p-0.5">
-                          <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
-                            <span className="font-bold text-orange-600 dark:text-orange-400 text-sm lg:text-base">
-                              {user.name?.charAt(0) || "U"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 lg:w-2.5 lg:h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                        {user.name?.charAt(0) || "U"}
                       </div>
-                      <div className="hidden lg:block text-left">
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                      <div className="hidden lg:block">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {user.name?.split(" ")[0] || "User"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Gold Member
-                        </p>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Platinum Member
+                        </div>
                       </div>
-                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''} hidden lg:block`} />
+                      <ChevronDown className={`w-4 h-4 text-gray-400 hidden lg:block transition-transform duration-300 ${
+                        isProfileOpen ? 'rotate-180' : ''
+                      }`} />
                     </button>
 
-                    {/* Mobile Profile Icon */}
-                    <button
-                      onClick={() => navigate("/profile")}
-                      className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95 touch-manipulation"
-                      aria-label="User menu"
-                    >
-                      <UserCircle className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </button>
-
-                    {/* Profile Dropdown - Desktop */}
                     {isProfileOpen && (
-                      <div className="absolute right-0 mt-2 w-64 lg:w-72 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50 animate-fadeIn">
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl py-3 border border-gray-200 dark:border-gray-700 z-50">
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">
-                                {user.name?.charAt(0) || "U"}
-                              </span>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                              {user.name?.charAt(0) || "U"}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">
-                                {user.name || "User"}
-                              </h4>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {user.email || ""}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                                  Gold Tier
-                                </span>
-                              </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 dark:text-white">{user.name}</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                             </div>
                           </div>
                         </div>
-
-                        <div className="py-2 max-h-64 overflow-y-auto">
+                        <div className="py-2">
                           {userMenuItems.map((item) => (
                             <Link
                               key={item.path}
                               to={item.path}
-                              className="flex items-center px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group active:bg-gray-100 dark:active:bg-gray-700"
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                               onClick={() => setIsProfileOpen(false)}
                             >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${item.color}`}>
-                                {item.icon}
-                              </div>
-                              <span className="flex-1 text-sm">{item.label}</span>
+                              {item.icon}
+                              <span className="flex-1">{item.label}</span>
                               {item.badge && (
-                                <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full">
+                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full">
                                   {item.badge}
                                 </span>
                               )}
-                              <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
                           ))}
                         </div>
-
-                        <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2">
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
                           <button
                             onClick={logout}
-                            className="flex items-center w-full px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group rounded-lg active:bg-red-100 dark:active:bg-red-900/20"
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                           >
-                            <LogOut size={18} className="mr-3" />
-                            <span className="text-sm">Logout</span>
+                            <LogOut size={18} />
+                            <span>Logout</span>
                           </button>
                         </div>
                       </div>
                     )}
                   </>
                 ) : (
-                  <>
-                    {/* Desktop Login Button */}
-                    <button
-                      onClick={() => navigate("/login")}
-                      className="hidden md:flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-4 lg:px-6 py-2 lg:py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 active:scale-95"
-                    >
-                      <UserCircle size={20} />
-                      <span className="text-sm lg:text-base">Sign In</span>
-                    </button>
-
-                    {/* Mobile Login Button */}
-                    <button
-                      onClick={() => navigate("/login")}
-                      className="md:hidden bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold px-3 py-2 rounded-xl shadow-lg shadow-orange-500/30 active:scale-95 touch-manipulation"
-                    >
-                      <UserCircle size={20} />
-                    </button>
-                  </>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-blue-500/30"
+                  >
+                    <UserCircle size={18} />
+                    <span className="hidden sm:block">Sign In</span>
+                  </button>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Fullscreen Search */}
-        {isSearchMobile && (
-          <div className="md:hidden fixed inset-0 z-50 bg-white dark:bg-gray-900 p-4 animate-fadeIn">
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={() => setIsSearchMobile(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Close search"
-              >
-                <X size={24} className="text-gray-700 dark:text-gray-300" />
-              </button>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Search</h3>
-              <div className="w-10"></div>
-            </div>
-            <form onSubmit={handleSearch} className="relative mb-6">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="What are you looking for?"
-                className="w-full pl-12 pr-4 py-4 bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-orange-500 transition-all text-base"
-                autoFocus
-              />
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold px-4 py-2 rounded-lg"
-              >
-                Search
-              </button>
-            </form>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Popular searches: "Pizza", "Burger", "Pasta", "Salad"
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {["Appetizers", "Main Course", "Desserts", "Drinks", "Breakfast", "Lunch"].map((item) => (
+        {/* Mobile Search Overlay */}
+        {isMobileSearchOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-gray-900">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center gap-3">
                 <button
-                  key={item}
-                  onClick={() => {
-                    navigate(`/search?q=${item}`);
-                    setIsSearchMobile(false);
-                  }}
-                  className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                  onClick={() => setIsMobileSearchOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  aria-label="Close search"
                 >
-                  {item}
+                  <X size={24} className="text-gray-700 dark:text-gray-300" />
                 </button>
-              ))}
+                <form onSubmit={handleSearch} className="flex-1">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search hotels, rooms, services..."
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg focus:outline-none"
+                    autoFocus
+                  />
+                </form>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Mobile Sidebar Menu */}
-        <div
-          ref={mobileMenuRef}
-          className={`md:hidden fixed inset-y-0 left-0 z-50 w-full bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-          style={{ height: '100dvh' }}
-        >
-          {/* Mobile Menu Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
-                <ChefHat className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg text-gray-900 dark:text-white">The Naivedyam</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Hotel & Fine Dining</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsMenuOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95"
-            >
-              <X size={24} className="text-gray-700 dark:text-gray-300" />
-            </button>
-          </div>
-
-          {/* Mobile Menu Content */}
-          <div className="h-[calc(100dvh-80px)] overflow-y-auto pb-32">
-            {/* User Section */}
-            <div className="p-5 border-b border-gray-100 dark:border-gray-800">
-              {user ? (
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">{user.name?.charAt(0) || "U"}</span>
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white">{user.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                        Gold Member
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => handleMobileNavigation("/login")}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-500/30 transition-all duration-300 active:scale-95 mb-4"
-                >
-                  Sign In / Register
-                </button>
-              )}
-              
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <div className="text-sm font-bold text-orange-600 dark:text-orange-400">4.8★</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Rating</div>
-                </div>
-                <div className="text-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <div className="text-sm font-bold text-orange-600 dark:text-orange-400">50+</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Dishes</div>
-                </div>
-                <div className="text-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <div className="text-sm font-bold text-orange-600 dark:text-orange-400">24/7</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Service</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Navigation */}
-            <div className="p-5">
-              <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                Navigation
-              </h3>
-              <div className="space-y-2">
-                {navItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => handleMobileNavigation(item.path)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all active:scale-95 ${isActive(item.path)
-                      ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={isActive(item.path) ? 'text-orange-500' : 'text-gray-500'}>
-                        {item.icon}
-                      </span>
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {item.badge && (
-                        <span className="text-xs font-medium bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-0.5 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                      <ChevronRight size={18} className="text-gray-400" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* About Section */}
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                About Us
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {aboutItems.slice(0, 4).map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => handleMobileNavigation(item.path)}
-                    className="flex flex-col items-center justify-center p-3 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95"
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${item.path.includes('team') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                      item.path.includes('awards') ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
-                        'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                      }`}>
-                      {item.icon}
-                    </div>
-                    <span className="text-xs font-medium text-gray-900 dark:text-white text-center">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                Quick Actions
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {quickActions.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={action.action}
-                    className={`flex items-center gap-2 p-3 rounded-xl transition-all active:scale-95 ${action.color}`}
-                  >
-                    {action.icon}
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Hotel Features */}
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                Hotel Features
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                {hotelFeatures.map((feature, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center justify-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg"
-                  >
-                    <div className="text-orange-500 mb-1">{feature.icon}</div>
-                    <span className="text-xs text-gray-700 dark:text-gray-300 text-center">{feature.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Contact Info */}
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
-                Contact Us
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <Phone size={16} className="text-orange-500" />
-                  <span>+91 9399741051</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <Mail size={16} className="text-orange-500" />
-                  <span>info@thenaivedyam.com</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <MapPin size={16} className="text-orange-500" />
-                  <span>123 Luxury Avenue, NYC</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Logout Button (if logged in) */}
-            {user && (
-              <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-                <button
-                  onClick={logout}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors active:bg-red-100"
-                >
-                  <LogOut size={18} />
-                  <span className="font-medium">Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile Menu Overlay */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div
-            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fadeIn"
-            onClick={() => setIsMenuOpen(false)}
-          />
+          <div className="lg:hidden fixed inset-0 z-40">
+            <div 
+              ref={mobileMenuRef}
+              className="absolute inset-y-0 left-0 w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto"
+            >
+              {/* Mobile Menu Header */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center">
+                      <Hotel className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-lg text-gray-900 dark:text-white">The Naivedyam</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Luxury Hospitality</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsMenuOpen(false)}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <X size={24} className="text-gray-700 dark:text-gray-300" />
+                  </button>
+                </div>
+
+                {user ? (
+                  <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                        {user.name?.charAt(0) || "U"}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">{user.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleMobileNavigation("/login")}
+                    className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 rounded-lg"
+                  >
+                    Sign In / Register
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Menu Sections */}
+              <div className="p-4">
+                {/* Section Tabs */}
+                <div className="flex gap-2 mb-4 overflow-x-auto">
+                  {Object.entries(mobileSections).map(([key, section]) => (
+                    <button
+                      key={key}
+                      onClick={() => setActiveMobileSection(key)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap ${
+                        activeMobileSection === key
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {section.icon}
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Section Content */}
+                <div className="space-y-4">
+                  {activeMobileSection === "main" && (
+                    <div className="space-y-2">
+                      {mainNavItems.map((item) => (
+                        <button
+                          key={item.path}
+                          onClick={() => handleMobileNavigation(item.path)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-lg ${
+                            isActive(item.path)
+                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                              : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                          }`}
+                        >
+                          {item.icon}
+                          <span className="font-medium">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeMobileSection === "services" && (
+                    <div className="space-y-4">
+                      {servicesItems.map((category, index) => (
+                        <div key={index}>
+                          <h4 className="font-bold text-gray-900 dark:text-white mb-2">{category.category}</h4>
+                          <div className="space-y-2">
+                            {category.items.map((item) => (
+                              <button
+                                key={item.path}
+                                onClick={() => handleMobileNavigation(item.path)}
+                                className="w-full flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                              >
+                                {item.icon}
+                                <div className="text-left">
+                                  <div className="font-medium">{item.label}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeMobileSection === "about" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {aboutItems.map((item) => (
+                        <button
+                          key={item.path}
+                          onClick={() => handleMobileNavigation(item.path)}
+                          className="flex flex-col items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                          {item.icon}
+                          <span className="mt-2 font-medium">{item.label}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeMobileSection === "contact" && (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-xl">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3">Contact Us</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Phone size={16} />
+                            <span>+91 9399741051</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail size={16} />
+                            <span>info@thenaivedyam.com</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin size={16} />
+                            <span>New Delhi, India</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hotel Features */}
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+                  <h4 className="font-bold text-gray-900 dark:text-white mb-3">Hotel Features</h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {hotelFeatures.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                      >
+                        <div className={feature.color}>{feature.icon}</div>
+                        <span className="text-xs mt-1">{feature.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Logout Button */}
+                {user && (
+                  <button
+                    onClick={logout}
+                    className="w-full mt-6 flex items-center justify-center gap-2 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg"
+                  >
+                    <LogOut size={18} />
+                    <span>Logout</span>
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Overlay */}
+            <div 
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setIsMenuOpen(false)}
+            />
+          </div>
         )}
       </nav>
     </>

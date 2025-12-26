@@ -152,7 +152,7 @@ const AboutPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
       <section className="relative py-16 sm:py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-900/20 to-amber-900/10 dark:from-orange-900/30 dark:to-amber-900/20"></div>
+        <div className="absolute inset-0  from-orange-900/20 to-amber-900/10 dark:from-orange-900/30 dark:to-amber-900/20"></div>
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2070')] bg-cover bg-center opacity-10"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
