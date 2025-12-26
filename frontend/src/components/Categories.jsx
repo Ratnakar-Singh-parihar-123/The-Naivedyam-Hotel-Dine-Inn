@@ -1,10 +1,10 @@
 import { useContext, useState, useEffect, useRef } from "react";
 import { AppContext } from "../context/AppContext";
-import { 
-  ChevronRight, 
-  Sparkles, 
-  Filter, 
-  Search, 
+import {
+  ChevronRight,
+  Sparkles,
+  Filter,
+  Search,
   X,
   Clock,
   Flame,
@@ -54,7 +54,11 @@ const Categories = () => {
     { _id: "12", name: "Ice Creams", icon: <IceCream />, color: "from-blue-300 to-cyan-300", count: 8, description: "Creamy frozen desserts", popular: true },
   ];
 
-  const categories = initialCategories.length > 0 ? initialCategories : demoCategories;
+  const categories =
+    Array.isArray(initialCategories) && initialCategories.length > 0
+      ? initialCategories
+      : demoCategories;
+
 
   // Filters
   const filters = [
@@ -68,14 +72,14 @@ const Categories = () => {
   // Filter categories based on search and selected filter
   const filteredCategories = categories.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         category.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
+      category.description.toLowerCase().includes(searchQuery.toLowerCase());
+
     if (selectedFilter === "all") return matchesSearch;
     if (selectedFilter === "popular") return matchesSearch && category.popular;
     if (selectedFilter === "trending") return matchesSearch && category.trending;
     if (selectedFilter === "healthy") return matchesSearch && category.healthy;
     if (selectedFilter === "chef") return matchesSearch && category.chefPick;
-    
+
     return matchesSearch;
   });
 
@@ -87,14 +91,14 @@ const Categories = () => {
   // Handle category click with animation
   const handleCategoryClick = (categoryId) => {
     setActiveCategory(categoryId);
-    
+
     // Add click animation
     const element = document.getElementById(`category-${categoryId}`);
     if (element) {
       element.classList.add("scale-95");
       setTimeout(() => element.classList.remove("scale-95"), 300);
     }
-    
+
     setTimeout(() => {
       navigate(`/menu?category=${categoryId}`);
     }, 500);
@@ -115,7 +119,7 @@ const Categories = () => {
   const featuredCategories = categories.slice(0, 4);
 
   return (
-    <section 
+    <section
       ref={containerRef}
       className="relative py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white via-orange-50/30 to-white dark:from-gray-900 dark:via-gray-800/30 dark:to-gray-900 overflow-hidden"
     >
@@ -127,7 +131,7 @@ const Categories = () => {
 
       <div className="container mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -139,7 +143,7 @@ const Categories = () => {
               Culinary Collection
             </span>
           </div>
-          
+
           <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
             <span className="block bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-500 bg-clip-text text-transparent">
               Explore Our
@@ -148,15 +152,15 @@ const Categories = () => {
               Food Categories
             </span>
           </h2>
-          
+
           <p className="text-sm xs:text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg xs:max-w-xl sm:max-w-2xl mx-auto px-2 leading-relaxed">
-            Discover handcrafted dishes from our carefully curated culinary categories, 
+            Discover handcrafted dishes from our carefully curated culinary categories,
             each prepared with passion and premium ingredients
           </p>
         </motion.div>
 
         {/* Search and Filter Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -195,11 +199,10 @@ const Categories = () => {
                 <button
                   key={filter.id}
                   onClick={() => setSelectedFilter(filter.id)}
-                  className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2 rounded-lg sm:rounded-xl transition-all duration-300 whitespace-nowrap ${
-                    selectedFilter === filter.id
+                  className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2 rounded-lg sm:rounded-xl transition-all duration-300 whitespace-nowrap ${selectedFilter === filter.id
                       ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg shadow-orange-500/30"
                       : "bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                    }`}
                 >
                   <span className={`${selectedFilter === filter.id ? 'text-white' : 'text-orange-500'}`}>
                     {filter.icon}
@@ -249,7 +252,7 @@ const Categories = () => {
         <AnimatePresence>
           {filteredCategories.length > 0 ? (
             <>
-              <motion.div 
+              <motion.div
                 layout
                 className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12"
               >
@@ -262,14 +265,13 @@ const Categories = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={`group relative cursor-pointer transition-all duration-300 ${
-                      activeCategory === cat._id ? 'ring-2 ring-orange-500 ring-offset-2' : ''
-                    }`}
+                    className={`group relative cursor-pointer transition-all duration-300 ${activeCategory === cat._id ? 'ring-2 ring-orange-500 ring-offset-2' : ''
+                      }`}
                     onClick={() => handleCategoryClick(cat._id)}
                   >
                     {/* Card Container */}
                     <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-800 group-hover:border-orange-500/50 dark:group-hover:border-orange-500/50 shadow-lg group-hover:shadow-2xl group-hover:shadow-orange-500/20 transition-all duration-500 h-full">
-                      
+
                       {/* Header with Icon */}
                       <div className="relative p-5 sm:p-6">
                         <div className="flex items-start justify-between mb-4">
@@ -289,7 +291,7 @@ const Categories = () => {
                         <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-1">
                           {cat.name}
                         </h3>
-                        
+
                         {/* Description */}
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
                           {cat.description || "Explore our delicious selection of dishes in this category"}
@@ -346,7 +348,7 @@ const Categories = () => {
 
               {/* Load More Button */}
               {visibleCategories < filteredCategories.length && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
@@ -364,7 +366,7 @@ const Categories = () => {
             </>
           ) : (
             /* Empty State */
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-12 sm:py-16"
@@ -392,7 +394,7 @@ const Categories = () => {
         </AnimatePresence>
 
         {/* Statistics Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -406,33 +408,33 @@ const Categories = () => {
               Quality and variety that defines our excellence
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 xs:gap-4">
             {[
-              { 
-                label: "Total Categories", 
-                value: categories.length, 
+              {
+                label: "Total Categories",
+                value: categories.length,
                 icon: <Utensils className="w-5 h-5" />,
                 color: "from-orange-500 to-yellow-500",
                 description: "Variety of cuisines"
               },
-              { 
-                label: "Menu Items", 
-                value: "150+", 
+              {
+                label: "Menu Items",
+                value: "150+",
                 icon: <Award className="w-5 h-5" />,
                 color: "from-green-500 to-emerald-500",
                 description: "Signature dishes"
               },
-              { 
-                label: "Chef Specials", 
-                value: "25+", 
+              {
+                label: "Chef Specials",
+                value: "25+",
                 icon: <ChefHat className="w-5 h-5" />,
                 color: "from-blue-500 to-cyan-500",
                 description: "Exclusive creations"
               },
-              { 
-                label: "Customer Favorites", 
-                value: "50+", 
+              {
+                label: "Customer Favorites",
+                value: "50+",
                 icon: <Star className="w-5 h-5" fill="currentColor" />,
                 color: "from-purple-500 to-pink-500",
                 description: "Top rated dishes"
@@ -470,7 +472,7 @@ const Categories = () => {
         </motion.div>
 
         {/* View Menu CTA */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}

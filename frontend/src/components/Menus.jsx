@@ -1,14 +1,14 @@
 import { useContext, useState, useEffect, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import MenuCard from "./MenuCard";
-import { 
-  Filter, 
-  Search, 
-  Sparkles, 
-  ChefHat, 
-  Star, 
-  Flame, 
-  Leaf, 
+import {
+  Filter,
+  Search,
+  Sparkles,
+  ChefHat,
+  Star,
+  Flame,
+  Leaf,
   Clock,
   DollarSign,
   TrendingUp,
@@ -29,71 +29,157 @@ const Menus = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Safe menus array fallback
+  const safeMenus = useMemo(() => {
+    if (!menus || !Array.isArray(menus)) {
+      console.warn("Menus data is not available or not an array");
+      return [];
+    }
+    return menus;
+  }, [menus]);
+
   // Simulate loading state
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
-  }, [menus]);
+  }, [safeMenus]);
 
   // Extract unique categories
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(menus.map(menu => menu.category))];
+    if (!Array.isArray(safeMenus) || safeMenus.length === 0) return ["all"];
+
+    const uniqueCategories = [
+      ...new Set(
+        safeMenus
+          .map(menu => menu?.category)
+          .filter(category => category && typeof category === 'string')
+      ),
+    ];
+
     return ["all", ...uniqueCategories];
-  }, [menus]);
+  }, [safeMenus]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!Array.isArray(safeMenus) || safeMenus.length === 0) {
+      return {
+        totalItems: 0,
+        averagePrice: "0.00",
+        averageRating: "0.0",
+        vegetarianCount: 0,
+        spicyCount: 0,
+      };
+    }
+
+    const validMenus = safeMenus.filter(menu => 
+      menu && typeof menu === 'object'
+    );
+
+    if (validMenus.length === 0) {
+      return {
+        totalItems: 0,
+        averagePrice: "0.00",
+        averageRating: "0.0",
+        vegetarianCount: 0,
+        spicyCount: 0,
+      };
+    }
+
+    const totalItems = validMenus.length;
+    const totalPrice = validMenus.reduce((sum, menu) => {
+      const price = parseFloat(menu.price) || 0;
+      return sum + price;
+    }, 0);
+    const totalRating = validMenus.reduce((sum, menu) => {
+      const rating = parseFloat(menu.rating) || 0;
+      return sum + rating;
+    }, 0);
+    const vegetarianCount = validMenus.filter(menu => menu.isVegetarian === true).length;
+    const spicyCount = validMenus.filter(menu => menu.isSpicy === true).length;
+
+    return {
+      totalItems,
+      averagePrice: (totalPrice / totalItems).toFixed(2),
+      averageRating: (totalRating / totalItems).toFixed(1),
+      vegetarianCount,
+      spicyCount,
+    };
+  }, [safeMenus]);
 
   // Filter and sort menus
   const filteredMenus = useMemo(() => {
-    let filtered = [...menus];
+    if (!Array.isArray(safeMenus) || safeMenus.length === 0) return [];
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(menu =>
-        menu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        menu.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        menu.category.toLowerCase().includes(searchQuery.toLowerCase())
+    let filtered = [...safeMenus];
+
+    // 🔍 Search filter
+    if (searchQuery?.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(menu => {
+        if (!menu || typeof menu !== 'object') return false;
+        
+        const nameMatch = menu.name?.toLowerCase().includes(q) || false;
+        const descMatch = menu.description?.toLowerCase().includes(q) || false;
+        const categoryMatch = menu.category?.toLowerCase().includes(q) || false;
+        const ingredientsMatch = Array.isArray(menu.ingredients) 
+          ? menu.ingredients.some(ing => ing?.toLowerCase().includes(q))
+          : false;
+        
+        return nameMatch || descMatch || categoryMatch || ingredientsMatch;
+      });
+    }
+
+    // 🏷 Category filter
+    if (selectedCategory && selectedCategory !== "all") {
+      filtered = filtered.filter(
+        menu => menu?.category === selectedCategory
       );
     }
 
-    // Apply category filter
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(menu => menu.category === selectedCategory);
+    // 💰 Price filter
+    if (Array.isArray(priceRange) && priceRange.length === 2) {
+      filtered = filtered.filter(menu => {
+        const price = parseFloat(menu?.price) || 0;
+        return price >= priceRange[0] && price <= priceRange[1];
+      });
     }
 
-    // Apply price filter
-    filtered = filtered.filter(menu => 
-      menu.price >= priceRange[0] && menu.price <= priceRange[1]
-    );
+    // 🔃 Sorting
+    const getValue = (menu, key) => {
+      switch (key) {
+        case 'price':
+          return parseFloat(menu.price) || 0;
+        case 'rating':
+          return parseFloat(menu.rating) || 0;
+        case 'orderCount':
+          return parseInt(menu.orderCount) || 0;
+        case 'createdAt':
+          return new Date(menu.createdAt || 0).getTime();
+        default:
+          return 0;
+      }
+    };
 
-    // Apply sorting
     switch (sortBy) {
       case "price-low":
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => getValue(a, 'price') - getValue(b, 'price'));
         break;
       case "price-high":
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => getValue(b, 'price') - getValue(a, 'price'));
         break;
       case "rating":
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        filtered.sort((a, b) => getValue(b, 'rating') - getValue(a, 'rating'));
         break;
       case "newest":
-        filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        filtered.sort((a, b) => getValue(b, 'createdAt') - getValue(a, 'createdAt'));
         break;
       default: // popular
-        filtered.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
+        filtered.sort((a, b) => getValue(b, 'orderCount') - getValue(a, 'orderCount'));
     }
 
     return filtered;
-  }, [menus, searchQuery, selectedCategory, priceRange, sortBy]);
-
-  // Calculate statistics
-  const stats = useMemo(() => ({
-    totalItems: menus.length,
-    averagePrice: (menus.reduce((sum, menu) => sum + menu.price, 0) / menus.length).toFixed(2),
-    averageRating: (menus.reduce((sum, menu) => sum + (menu.rating || 0), 0) / menus.length).toFixed(1),
-    vegetarianCount: menus.filter(menu => menu.isVegetarian).length,
-    spicyCount: menus.filter(menu => menu.isSpicy).length,
-  }), [menus]);
+  }, [safeMenus, searchQuery, selectedCategory, priceRange, sortBy]);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -103,20 +189,35 @@ const Menus = () => {
   };
 
   const formatCategory = (cat) => {
-    return cat.charAt(0).toUpperCase() + cat.slice(1);
+    if (!cat || cat === "all") return "All Categories";
+    return cat
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getCategoryIcon = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'vegetarian':
-        return <Leaf className="w-4 h-4 text-green-500" />;
-      case 'spicy':
-        return <Flame className="w-4 h-4 text-red-500" />;
-      case 'chef':
-        return <ChefHat className="w-4 h-4 text-orange-500" />;
-      default:
-        return <Star className="w-4 h-4 text-yellow-500" />;
+    if (!category) return <Star className="w-4 h-4 text-yellow-500" />;
+    
+    const catLower = category.toLowerCase();
+    if (catLower.includes('vegetarian') || catLower.includes('veg')) {
+      return <Leaf className="w-4 h-4 text-green-500" />;
     }
+    if (catLower.includes('spicy') || catLower.includes('hot')) {
+      return <Flame className="w-4 h-4 text-red-500" />;
+    }
+    if (catLower.includes('special') || catLower.includes('signature')) {
+      return <ChefHat className="w-4 h-4 text-orange-500" />;
+    }
+    if (catLower.includes('dessert') || catLower.includes('sweet')) {
+      return <Sparkles className="w-4 h-4 text-pink-500" />;
+    }
+    return <Star className="w-4 h-4 text-yellow-500" />;
+  };
+
+  // Check if menu is valid
+  const isValidMenu = (menu) => {
+    return menu && typeof menu === 'object' && menu._id && menu.name;
   };
 
   return (
@@ -130,11 +231,11 @@ const Menus = () => {
               Culinary Excellence
             </span>
           </div>
-          
+
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">
             Discover Our <span className="text-yellow-500 dark:text-yellow-400">Exquisite</span> Menu
           </h1>
-          
+
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-base sm:text-lg px-4">
             Explore our handcrafted dishes, each prepared with passion and the finest ingredients
           </p>
@@ -144,10 +245,30 @@ const Menus = () => {
         <div className="mb-8 sm:mb-10">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {[
-              { label: "Total Items", value: stats.totalItems, icon: <ChefHat className="w-4 h-4" />, color: "from-blue-500 to-cyan-500" },
-              { label: "Avg Price", value: `$${stats.averagePrice}`, icon: <DollarSign className="w-4 h-4" />, color: "from-green-500 to-emerald-500" },
-              { label: "Avg Rating", value: `${stats.averageRating}/5`, icon: <Star className="w-4 h-4" />, color: "from-yellow-500 to-amber-500" },
-              { label: "Trending", value: `${filteredMenus.length} items`, icon: <TrendingUp className="w-4 h-4" />, color: "from-orange-500 to-red-500" },
+              { 
+                label: "Total Items", 
+                value: stats.totalItems, 
+                icon: <ChefHat className="w-4 h-4" />, 
+                color: "from-blue-500 to-cyan-500" 
+              },
+              { 
+                label: "Avg Price", 
+                value: `$${stats.averagePrice}`, 
+                icon: <DollarSign className="w-4 h-4" />, 
+                color: "from-green-500 to-emerald-500" 
+              },
+              { 
+                label: "Avg Rating", 
+                value: `${stats.averageRating}/5`, 
+                icon: <Star className="w-4 h-4" />, 
+                color: "from-yellow-500 to-amber-500" 
+              },
+              { 
+                label: "Trending", 
+                value: `${filteredMenus.length} items`, 
+                icon: <TrendingUp className="w-4 h-4" />, 
+                color: "from-orange-500 to-red-500" 
+              },
             ].map((stat, index) => (
               <div
                 key={index}
@@ -233,19 +354,18 @@ const Menus = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Category
                   </label>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                     {categories.map((category) => (
                       <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
-                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg transition-all duration-200 ${
-                          selectedCategory === category
-                            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg transition-all duration-200 ${selectedCategory === category
+                          ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          }`}
                       >
                         {getCategoryIcon(category)}
-                        <span className="text-sm">
+                        <span className="text-sm truncate">
                           {category === "all" ? "All Categories" : formatCategory(category)}
                         </span>
                       </button>
@@ -263,17 +383,19 @@ const Menus = () => {
                       type="range"
                       min="0"
                       max="100"
+                      step="1"
                       value={priceRange[0]}
                       onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500"
                     />
                     <input
                       type="range"
                       min="0"
                       max="100"
+                      step="1"
                       value={priceRange[1]}
                       onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500"
                     />
                     <div className="flex justify-between text-sm text-gray-500">
                       <span>$0</span>
@@ -298,11 +420,10 @@ const Menus = () => {
                       <button
                         key={option.value}
                         onClick={() => setSortBy(option.value)}
-                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg transition-all duration-200 ${
-                          sortBy === option.value
-                            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg transition-all duration-200 ${sortBy === option.value
+                          ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          }`}
                       >
                         <span className={sortBy === option.value ? "text-orange-500" : "text-gray-500"}>
                           {option.icon}
@@ -321,22 +442,20 @@ const Menus = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setViewMode("grid")}
-                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                        viewMode === "grid"
-                          ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
+                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${viewMode === "grid"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
                     >
                       <Grid className="w-4 h-4" />
                       <span className="text-sm">Grid</span>
                     </button>
                     <button
                       onClick={() => setViewMode("list")}
-                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                        viewMode === "list"
-                          ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
+                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${viewMode === "list"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
                     >
                       <List className="w-4 h-4" />
                       <span className="text-sm">List</span>
@@ -348,35 +467,46 @@ const Menus = () => {
           )}
 
           {/* Active Filters Bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Active Filters:
-            </span>
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 rounded-full text-sm">
-                Search: {searchQuery}
-                <button onClick={() => setSearchQuery("")} className="ml-1">
-                  <X className="w-3 h-3" />
-                </button>
+          {(searchQuery || selectedCategory !== "all" || priceRange[0] > 0 || priceRange[1] < 100) && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Active Filters:
               </span>
-            )}
-            {selectedCategory !== "all" && (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 rounded-full text-sm">
-                {formatCategory(selectedCategory)}
-                <button onClick={() => setSelectedCategory("all")} className="ml-1">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {(priceRange[0] > 0 || priceRange[1] < 100) && (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 dark:text-green-400 rounded-full text-sm">
-                Price: ${priceRange[0]} - ${priceRange[1]}
-                <button onClick={() => setPriceRange([0, 100])} className="ml-1">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-          </div>
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400 rounded-full text-sm">
+                  Search: {searchQuery.length > 20 ? searchQuery.substring(0, 20) + '...' : searchQuery}
+                  <button 
+                    onClick={() => setSearchQuery("")} 
+                    className="ml-1 hover:bg-orange-500/20 rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedCategory !== "all" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 rounded-full text-sm">
+                  {formatCategory(selectedCategory)}
+                  <button 
+                    onClick={() => setSelectedCategory("all")} 
+                    className="ml-1 hover:bg-blue-500/20 rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {(priceRange[0] > 0 || priceRange[1] < 100) && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 dark:text-green-400 rounded-full text-sm">
+                  Price: ${priceRange[0]} - ${priceRange[1]}
+                  <button 
+                    onClick={() => setPriceRange([0, 100])} 
+                    className="ml-1 hover:bg-green-500/20 rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Results Header */}
@@ -387,9 +517,10 @@ const Menus = () => {
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
               {searchQuery ? `Results for "${searchQuery}"` : 'Showing all menu items'}
+              {selectedCategory !== "all" && ` in ${formatCategory(selectedCategory)}`}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="relative">
               <select
@@ -425,7 +556,9 @@ const Menus = () => {
                 No Items Found
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Try adjusting your filters or search terms
+                {searchQuery 
+                  ? `No results found for "${searchQuery}". Try adjusting your search terms.`
+                  : "No menu items available. Try adjusting your filters."}
               </p>
               <button
                 onClick={handleResetFilters}
@@ -437,17 +570,19 @@ const Menus = () => {
           </div>
         ) : (
           /* Menu Grid/List */
-          <div className={viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6" 
+          <div className={viewMode === "grid"
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
             : "space-y-4 sm:space-y-6"
           }>
-            {filteredMenus.map((menu) => (
-              <MenuCard 
-                key={menu._id} 
-                menu={menu} 
-                viewMode={viewMode}
-              />
-            ))}
+            {filteredMenus
+              .filter(isValidMenu)
+              .map((menu) => (
+                <MenuCard
+                  key={menu._id}
+                  menu={menu}
+                  viewMode={viewMode}
+                />
+              ))}
           </div>
         )}
 
@@ -458,10 +593,10 @@ const Menus = () => {
               Showing {Math.min(filteredMenus.length, 12)} of {filteredMenus.length} items
             </p>
             <div className="flex gap-2">
-              <button className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <button className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 Previous
               </button>
-              <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 transition-all duration-300">
+              <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                 Next
               </button>
             </div>
